@@ -1,0 +1,108 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.hkbank.pbcrs.dao.FilterDataMapper">
+    <resultMap id="BaseResultMap" type="com.hkbank.pbcrs.model.FilterData">
+        <id column="SEQNO" jdbcType="VARCHAR" property="seqNo"/>
+        <result column="NAME" jdbcType="VARCHAR" property="name"/>
+        <result column="ID" jdbcType="VARCHAR" property="id"/>
+        <result column="CREATEDATE" jdbcType="VARCHAR" property="createDate"/>
+        <result column="SOURCECUSTID" jdbcType="VARCHAR" property="sourcecustID"/>
+        <result column="CREATETIME" jdbcType="VARCHAR" property="createTime"/>
+        <result column="REASON" jdbcType="VARCHAR" property="reason"/>
+        <result column="ISENABLE" jdbcType="VARCHAR" property="isEnable"/>
+    </resultMap>
+    <!--分页查询列表-->
+
+    <sql id="select_condition">
+        <if test="createDate != null and createDate != ''">
+            and CREATEDATE = #{createDate}
+        </if>
+        <if test="sourcecustID != null and sourcecustID != ''">
+            and SOURCECUSTID like  '%'||#{sourcecustID}||'%'
+        </if>
+        <if test="name != null and name != ''">
+            and NAME like  '%'||#{name}||'%'
+        </if>
+        <if test="certNum != null and certNum != ''">
+            and ID like  '%'||#{certNum}||'%'
+        </if>
+        <if test="enable != null and enable != ''">
+            and ISENABLE  = #{enable}
+        </if>
+
+    </sql>
+
+    <select id="selectList" resultMap="BaseResultMap">
+        select * from (
+        select info1.*,ROWNUM RN from (
+        select SEQNO,
+        NAME,
+        ID,
+        CREATEDATE,
+        SOURCECUSTID,
+        CREATETIME,
+        REASON,
+        ISENABLE
+        from PBCRS_REPORT_FILTER_DATA b
+        where 1=1
+        <include refid="select_condition"/>
+        )info1 where ROWNUM &lt;#{endindex}
+        )where RN &gt;=#{startindex}
+    </select>
+    <!--查询总数-->
+    <select id="selectCount" resultType="java.lang.Integer">
+        select count(1)
+        from PBCRS_REPORT_FILTER_DATA b
+        where 1=1
+        <include refid="select_condition"/>
+    </select>
+    <select id="getList" resultType="com.hkbank.pbcrs.model.FilterData">
+        select SEQNO,
+               NAME,
+               ID,
+               CREATEDATE,
+               SOURCECUSTID,
+               CREATETIME,
+               REASON,
+               ISENABLE
+        from PBCRS_REPORT_FILTER_DATA b
+    </select>
+
+    <insert id="insert">
+        insert into PBCRS_REPORT_FILTER_DATA(
+             SEQNO,
+             NAME,
+             ID,
+             CREATEDATE,
+             SOURCECUSTID,
+             CREATETIME,
+             REASON,
+             ISENABLE)
+             values
+        (
+        SEQ_FILTER_DATA.Nextval,
+         #{name},
+         #{id},
+         #{createDate},
+         #{sourcecustID},
+         #{createTime},
+         #{reason},
+         #{isEnable}
+        )
+    </insert>
+
+    <update id="updateIsEnableBySeqno">
+        update PBCRS_REPORT_FILTER_DATA set ISENABLE= #{1} where SEQNO = #{0}
+    </update>
+
+    <delete id="delete">
+        delete PBCRS_REPORT_FILTER_DATA where SEQNO = #{seqNo}
+    </delete>
+
+
+    <delete id="deleteBysourcecustID">
+        delete PBCRS_REPORT_FILTER_DATA where SOURCECUSTID = #{sourcecustID}
+    </delete>
+
+
+</mapper>

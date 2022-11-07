@@ -1,0 +1,33 @@
+*{
+	font-size:12px;
+}
+body {
+    font-family:verdana,helvetica,arial,sans-serif;
+    padding:20px;
+    font-size:12px;
+    margin:0;
+}
+h2 {
+    font-size:18px;
+    font-weight:bold;
+    margin:0;
+    margin-bottom:15px;
+}
+.demo-info{
+	padding:0 0 12px 0;
+}
+.demo-tip{
+	display:none;
+}
+.queryTable{
+	width:1000px;
+	height:30px;
+}
+.queryTitle{
+	width:102px;
+	height:26px;
+}
+.queryContent{
+	width:147px;
+	height:26px;
+}

@@ -1,0 +1,60 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.hkbank.pbcrs.dao.FilterReportMapper">
+
+
+
+    <select id="selectList" resultType="java.util.Map">
+        select * from (
+        select t.*,ROWNUM RN from (
+            select  substr(t.bssgmtseqno,0,length(t.bssgmtseqno)-12) bssgmtseqno,t.infrectype,t.entname,t.ENTCERTTYPE,t.ENTCERTNUM,t.rptdate,t.org_code,t.sourcesys from PBCRS_REPORT_ENBASINFBSSGMT  t
+            where t.reportflag = '2'
+            union all
+            select substr(t1.acctbssgmtseqno,0,length(t1.acctbssgmtseqno)-14) bssgmtseqno,t1.infrectype,t1.name,t1.idtype,t1.idnum,t1.rptdate,t1.org_code,t1.sourcesys from PBCRS_REPORT_ENACCTBSSGMT t1
+            where t1.reportflag = '2'
+            union all
+            select substr( t2.motgacltalctrctbssgmtseqno,0,length( t2.motgacltalctrctbssgmtseqno)-12) bssgmtseqno,t2.infrectype,t2.name,t2.certtype,t2.certnum,t2.rptdate,t2.org_code,t2.sourcesys from PBCRS_REPORT_MOTCLTCTRBSSGMT t2
+            where t2.reportflag = '2' and t2.sourcesys='CRMS'
+        ) t where ROWNUM  &lt;#{endindex}
+        ) r where r.rn &gt;=#{startindex}
+    </select>
+    <select id="selectCount" resultType="java.lang.Integer">
+        select count(1) from (
+              select t.bssgmtseqno,t.infrectype,t.entname,t.ENTCERTTYPE,t.ENTCERTNUM,t.rptdate,t.org_code,t.sourcesys from PBCRS_REPORT_ENBASINFBSSGMT  t
+              where t.reportflag = '2'
+              union all
+              select t1.acctbssgmtseqno,t1.infrectype,t1.name,t1.idtype,t1.idnum,t1.rptdate,t1.org_code,t1.sourcesys from PBCRS_REPORT_ENACCTBSSGMT t1
+              where t1.reportflag = '2'
+              union all
+              select t2.motgacltalctrctbssgmtseqno,t2.infrectype,t2.name,t2.certtype,t2.certnum,t2.rptdate,t2.org_code,t2.sourcesys from PBCRS_REPORT_MOTCLTCTRBSSGMT t2
+              where t2.reportflag = '2'
+          ) t
+    </select>
+    <select id="selectOne" resultType="java.util.Map">
+        select * from (
+                                 select t.bssgmtseqno,t.infrectype,t.entname,t.ENTCERTTYPE,t.ENTCERTNUM,t.rptdate,t.org_code,t.sourcesys from PBCRS_REPORT_ENBASINFBSSGMT  t
+                                 where t.reportflag = '2'
+                                 union all
+                                 select t1.acctbssgmtseqno,t1.infrectype,t1.name,t1.idtype,t1.idnum,t1.rptdate,t1.org_code,t1.sourcesys from PBCRS_REPORT_ENACCTBSSGMT t1
+                                 where t1.reportflag = '2'
+                                 union all
+                                 select t2.motgacltalctrctbssgmtseqno,t2.infrectype,t2.name,t2.certtype,t2.certnum,t2.rptdate,t2.org_code,t2.sourcesys from PBCRS_REPORT_MOTCLTCTRBSSGMT t2
+                                 where t2.reportflag = '2'
+        ) t where t.bssgmtseqno = #{BSSGMTSEQNO}
+    </select>
+
+    <update id="updateEnBasinfbBssgmt">
+        update PBCRS_REPORT_ENBASINFBSSGMT t set t.ENTCERTTYPE = #{ENTCERTTYPE},t.entname = #{ENTNAME},t.ENTCERTNUM =#{ENTCERTNUM}
+        where t.ENTCERTTYPE = #{OLDENTCERTTYPE} and t.ENTCERTNUM = #{OLDENTCERTNUM} and t.reportflag = '2'
+    </update>
+    <update id="updateEnacctBssgmt">
+        update PBCRS_REPORT_ENACCTBSSGMT t set t.idtype = #{ENTCERTTYPE},t.name = #{ENTNAME},t.idnum =#{ENTCERTNUM}
+        where t.idtype = #{OLDENTCERTTYPE} and t.idnum = #{OLDENTCERTNUM} and t.reportflag = '2'
+    </update>
+    <update id="updateMotcltctrBssgmt">
+        update PBCRS_REPORT_MOTCLTCTRBSSGMT t set t.certtype = #{ENTCERTTYPE},t.name = #{ENTNAME},t.certnum =#{ENTCERTNUM}
+        where t.certtype = #{OLDENTCERTTYPE} and t.certnum = #{OLDENTCERTNUM} and t.reportflag = '2'
+    </update>
+
+
+</mapper>

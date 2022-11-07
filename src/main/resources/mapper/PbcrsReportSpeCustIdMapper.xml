@@ -1,0 +1,91 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.hkbank.pbcrs.mapper.PbcrsReportSpeCustIdMapper">
+
+
+  
+  <sql id="sql_selectCont">
+  	 <if test="QuerysourceCustId !=null and QuerysourceCustId !=''">
+    	and bb.sourceCustId = #{QuerysourceCustId}
+    </if>
+    <if test="QueryState !=null and QueryState !=''">
+    	and bb.state = #{QueryState}
+    </if>
+    <if test="querySourceSys!=null and querySourceSys!=''">
+    	and bb.sourcesys = #{querySourceSys}
+    </if>
+  
+  	
+  </sql>
+  
+  <select id="selectAllbyContCount" resultType="int" parameterType="map">
+    select count(1)
+       from pbcrs_report_specustId bb
+		   where 1=1 
+
+			  	<include refid="sql_selectCont"></include>
+  </select>
+  
+  
+  <select id="selectAllbyContPage" resultType="map" parameterType="map">
+  
+    select * from (
+	    SELECT A.*, ROWNUM RN  from (
+			      select *
+		          from pbcrs_report_specustId bb
+			    where 1=1 
+			  	<include refid="sql_selectCont"></include>
+		  	) A
+	  	WHERE ROWNUM &lt;=${endindex}
+  	) where RN &gt;${startindex}
+    
+  </select>
+  
+    <select id="checkCount" resultType="int" parameterType="map">
+       select count(1) from  pbcrs_report_specustId t where t.sourcesys=#{sourceSys} and t.sourceCustId = #{sourceCustId}
+    </select>
+  
+  <update id="delCustId" parameterType="map">
+  update pbcrs_report_specustId  set state=(case when state = '1' then '0' when state = '0' then '1' end) where 
+  sourcesys =#{sourceSys} and sourceCustId = #{sourceCustId}
+  </update>
+  
+  <!-- 主键过滤保存 -->
+  <insert id="SaveCustId" parameterType="map">
+  insert into pbcrs_report_specustId
+		(
+		<trim suffixOverrides=",">
+			<if test="sourceSys != null and sourceSys != ''">
+				SOURCESYS,
+			</if>
+			<if test="sourceCustId != null and sourceCustId != ''">
+				sourcecustId,
+			</if>
+			<if test="state != null and state != ''">
+				state,
+			</if>
+			<if test="speType != null and speType != ''">
+				spe_type,
+			</if>			
+		</trim>
+		)
+		values
+		(
+		<trim suffixOverrides=",">
+			<if test="sourceSys != null and sourceSys != ''">
+				#{sourceSys},
+			</if>
+			<if test="sourceCustId != null and sourceCustId != ''">
+				#{sourceCustId},
+			</if>			
+			<if test="state != null and state != ''">
+				#{state},
+			</if>
+			<if test="speType != null and speType != ''">
+				#{speType},
+			</if>			
+		</trim>
+		)
+  </insert>
+
+</mapper>

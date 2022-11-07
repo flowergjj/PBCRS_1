@@ -1,0 +1,12 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.hkbank.pbcrs.mapper.PbcrsReportDataJobMapper">
+	<select id="getIndScoreData" parameterType="map"  resultType="map">
+		select '1' data from dual
+	</select>
+
+	<sql id="test">
+		<if test="test != null and test != ''">
+		</if>
+	</sql>
+</mapper>

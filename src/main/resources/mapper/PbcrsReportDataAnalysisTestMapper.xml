@@ -1,0 +1,184 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.hkbank.pbcrs.mapper.PbcrsReportDataAnalysisTestMapper">
+	<sql id="test">
+		<if test="test != null and test != ''">
+		</if>
+	</sql>
+	<select id="getCustomerReportInfo" parameterType="map"  resultType="map">
+		 select count(1) total,
+           to_char(round(count(1) /
+           (select count(1)
+              from pbcrs_report_enbasinfbssgmt b
+             where etl_date = to_date('2020-07-31', 'yyyy-mm-dd')),4)*100,'990.99')||'%' zb,
+            case when b.entcerttype ='30' then '组织机构代码'
+                 when b.entcerttype ='20' then '统一社会信用代码'
+                 when b.entcerttype ='10' then '中征码（原贷款卡编码）'
+                  else b.entcerttype end type
+		 from pbcrs_report_enbasinfbssgmt b
+		 where etl_date = to_date(#{rptDate}, 'yyyy-mm-dd')
+		 group by entcerttype
+	</select>
+
+	<select id="getBaseInfoAnalysisInfo" parameterType="map"  resultType="map">
+	select * from (select * from  (
+		select '企业规模' qygm,c.sys_code_desc,count(1) total,to_char(round(count(1)/ (select count(1)
+          from pbcrs_report_EnBasInfFcsSgmt b
+         where etl_date = to_date(#{rptDate}, 'yyyy-mm-dd')),4)*100,990.99)||'%' bl
+ from pbcrs_report_EnBasInfFcsSgmt b
+ left join (
+ select * from pbcrs_sys_code where sys_code_type='EntScale'
+ )c on b.entscale=c.sys_code
+ where etl_date = to_date(#{rptDate}, 'yyyy-mm-dd')
+ group by sys_code_desc
+ ) order by total desc)
+ union all
+ select *
+   from (select * from  (select '经济类型',
+                c.sys_code_desc,
+                count(1) countTotal,
+                to_char(round(count(1) /
+                              (select count(1)
+                                 from pbcrs_report_EnBasInfFcsSgmt
+                                where etl_date =
+                                      to_date(#{rptDate}, 'yyyy-mm-dd')
+                                  and ecotype != '900'),
+                              4) * 100,
+                        '990.99') || '%'
+         
+           from (select *
+                   from pbcrs_report_EnBasInfFcsSgmt
+                  where etl_date = to_date(#{rptDate}, 'yyyy-mm-dd')
+                    and ecotype != '900') b
+           left join (select *
+                       from pbcrs_sys_code
+                      where sys_code_type = 'EcoType') c
+             on b.EcoType = c.sys_code
+         
+          group by sys_code_desc, c.SYS_NUMBER
+          ) order by countTotal desc)
+          
+   union all
+   select * from (select * from (
+         select '行业分类',c.sys_code_desc,
+                count(1) countTotal,
+                to_char(round(count(1) / (select count(1)
+                           from pbcrs_report_EnBasInfFcsSgmt
+                          where etl_date = to_date(#{rptDate}, 'yyyy-mm-dd')
+                            ),4)*100,'990.99')||'%' p
+        from (select *
+                from pbcrs_report_EnBasInfFcsSgmt
+               where etl_date = to_date(#{rptDate}, 'yyyy-mm-dd')
+             ) b
+        left join (select * from pbcrs_sys_code where sys_code_type = 'NatEcoIndCla') c 
+         on b.EcoIndusCate = c.sys_code
+       group by sys_code_desc, c.SYS_NUMBER,length(sys_code_desc)
+ ) order by countTotal desc)
+ 
+ union all
+ 
+ select * from (select * from  (
+       select '行政区划' ,c.sys_code_desc,
+             
+             count(1) countTotal,
+             to_char(round(count(1) / (select count(1)
+                           from pbcrs_report_EnBasInfFcsSgmt
+                          where etl_date = to_date(#{rptDate}, 'yyyy-mm-dd')
+                            ),4)*100,'990.99')||'%'
+                            
+        from (select *
+                from pbcrs_report_EnBasInfFcsSgmt
+               where etl_date = to_date(#{rptDate}, 'yyyy-mm-dd')
+                 and ecotype != '900') b
+        left join (select * from pbcrs_sys_code where sys_code_type = 'Dist') c on b.AdmDivOfReg =
+                                                                                      c.sys_code
+
+       group by sys_code_desc, c.SYS_NUMBER
+ ) order by countTotal desc)
+  union all
+ 
+ select * from (select * from  (
+     select '主要组成人员证件类型' ,c.sys_code_desc,
+           
+           count(1) countTotal,
+            to_char(round(count(1) / (select count(1)
+                         from PBCRS_REPORT_ENBASINFMMBINF
+                        where etl_date = to_date(#{rptDate}, 'yyyy-mm-dd')
+                          ),4)*100,'990.99')||'%'
+                          
+      from (select *
+              from PBCRS_REPORT_ENBASINFMMBINF
+             where etl_date = to_date(#{rptDate}, 'yyyy-mm-dd')
+               ) b
+      left join (select * from pbcrs_sys_code where sys_code_type = 'InIDType') c
+              on b.MmbIDType = c.sys_code
+
+     group by sys_code_desc, c.SYS_NUMBER
+ )order by countTotal desc)
+
+union all
+select * from (
+    select '客户资料类型', c.sys_code_desc,
+           count(1),
+            to_char(round(count(1) /
+                        (select count(1)
+                           from pbcrs_report_EnBasInfBsSgmt
+                          where etl_date = to_date(#{rptDate}, 'yyyy-mm-dd')),
+                        4) * 100,'999.99') || '%'
+           
+      from (select *
+              from pbcrs_report_EnBasInfBsSgmt
+             where etl_date = to_date(#{rptDate}, 'yyyy-mm-dd')) b
+      left join (select *
+                   from pbcrs_sys_code
+                  where sys_code_type = 'EnCustomerType') c
+        on b.CustomerType = c.sys_code
+
+     group by sys_code_desc, c.SYS_NUMBER
+     order by to_number(c.SYS_NUMBER)
+ )
+ 
+
+	</select>
+	
+	<select id="getReportFromInfo" parameterType="map"  resultType="map">
+				select '企业资产负债表' qyzcfz, count(1),
+				 to_char(round(count(1)/
+				 (
+				 select count(1) from pbcrs_report_enbasinfbssgmt
+				 where etl_date = to_date(#{rptDate}, 'yyyy-mm-dd')),4)*100,'990.99')||'%' zb
+				 
+				  from pbcrs_report_BalanceSheetBsSgm
+				 where etl_date = to_date(#{rptDate},'yyyy-mm-dd')
+				 group by 1
+				 
+				 
+				 union all
+				 
+				  
+				 select '企业利润及利润分配表' qyzcfz, count(1),
+				 to_char(round(count(1)/
+				 (
+				 select count(1) from pbcrs_report_enbasinfbssgmt
+				 where etl_date = to_date(#{rptDate}, 'yyyy-mm-dd')),4)*100,'990.99')||'%'
+				 
+				  from pbcrs_report_IncomeSBsSgmt
+				 where etl_date = to_date(#{rptDate},'yyyy-mm-dd')
+				 group by 1
+				 
+				  
+				 union all
+				 
+				  select '企业现金流量表' qyzcfz, count(1),
+				 to_char(round(count(1)/
+				 (
+				 select count(1) from pbcrs_report_enbasinfbssgmt
+				 where etl_date = to_date(#{rptDate}, 'yyyy-mm-dd')),4)*100,'990.99')||'%'
+				 
+				  from pbcrs_report_CashFlowsBsSgmt
+				 where etl_date = to_date(#{rptDate},'yyyy-mm-dd')
+				 group by 1
+		
+	</select>
+	
+</mapper>

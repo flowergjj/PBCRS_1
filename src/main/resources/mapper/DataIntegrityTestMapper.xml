@@ -1,0 +1,1822 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.hkbank.pbcrs.dao.DataIntegrityTestMapper">
+
+    	<sql id="sql_query">
+			<if test="querySourceSys != null and querySourceSys != ''">
+				and m.sourcesys=#{querySourceSys}
+			</if>
+		
+	</sql>
+
+  
+    <select id="selectDzyList" resultType="map" parameterType="map">
+
+		select '有效抵押合同数' typeName, to_char(count(1)) total from pbcrs_report_MotCltBsInfSgmt m
+		where m.etl_date = to_date(#{queryRptDate}, 'yyyy-mm-dd')
+		and m.guartype='1'
+		 and m.sourcesys in ('CRMS','SLNENT')
+		<include refid="sql_query"/>
+		union all
+		select '有效抵押担保金额' typeName, to_char(wm_concat(mapping.sys_desc||':'||sum(m.ccamt))) total from pbcrs_report_MotCltBsInfSgmt m
+        left join (select *
+                         from pbcrs_report_code_mapping
+                        where Sourcesys = 'MIS'
+                          and Sourcefiled = 'CURRENCY') mapping
+		          on Cy = mapping.SYS_CODE
+    	where m.etl_date = to_date(#{queryRptDate}, 'yyyy-mm-dd')
+    	and m.guartype='1'
+    	and m.sourcesys in ('CRMS','SLNENT')
+     	group by mapping.sys_desc
+		<include refid="sql_query"/>
+		union all
+		select '有效质押合同数' typeName, to_char(count(1)) total from pbcrs_report_MotCltBsInfSgmt m
+		where m.etl_date = to_date(#{queryRptDate}, 'yyyy-mm-dd')
+		and m.guartype='2'
+		and m.sourcesys in ('CRMS','SLNENT')
+		<include refid="sql_query"/>
+		union all
+		select '有效质押担保金额' typeName,to_char(wm_concat(mapping.sys_desc||':'||sum(m.ccamt))) total from pbcrs_report_MotCltBsInfSgmt m
+		left join (select *
+		                     from pbcrs_report_code_mapping
+		                    where Sourcesys = 'MIS'
+		                      and Sourcefiled = 'CURRENCY') mapping
+		          on Cy = mapping.SYS_CODE
+        where m.etl_date = to_date(#{queryRptDate}, 'yyyy-mm-dd')
+        and m.guartype='2'
+        and m.sourcesys in ('CRMS','SLNENT')
+        group by mapping.sys_desc
+		<include refid="sql_query"/>
+  </select>
+  
+   <select id="selectGuList" resultType="map" parameterType="map">
+    select  sysCodeDesc,sum(custTotal) custTotal,sum(acctTotal) acctTotal,to_char(wm_concat(cy||':'||total)) total from (
+    select sys_code_desc sysCodeDesc,sum(ccnt) custTotal,sum(dcnt) acctTotal,sum(loanamt) total,mapping.sys_desc cy from (
+    select c.sys_code_desc,0 ccnt,count(b.acctcode) dcnt,sum(g.loanamt) loanamt,a.cy from pbcrs_report_EnGuarAcctBsSgmt b
+    left join pbcrs_report_EnGuaAccBsInfSgmt a on b.guaracctbssgmtseqno=a.guaracctbsinfsgmtseqno
+    left join PBCRS_REPORT_EGUARLTREPINFSGMT g on b.guaracctbssgmtseqno=g.guarrltrepymtinfsgmtseqno
+     left join (select *
+                          from pbcrs_sys_code
+                         where sys_code_type = 'EnGuarAcctBusiLines') c on a.busilines =
+                                                                 c.sys_code
+      where b.etl_date = to_date(#{queryRptDate}, 'yyyy-mm-dd')
+      group by sys_code_desc,cy
+      
+    union 
+    
+    select sys_code_desc sysCodeDesc,count(sourcecustid) custTotal,0 acctTotal,0 total,'CNY' cy from (
+    
+    select c.sys_code_desc,g.sourcecustid from pbcrs_report_EnGuarAcctBsSgmt b left join
+    pbcrs_datacrms_enguarantyinfo g on b.acctcode= 'D10025210H0005' || g.acctcode
+    left join pbcrs_report_EnGuaAccBsInfSgmt a on b.guaracctbssgmtseqno=a.guaracctbsinfsgmtseqno
+     left join (select *
+                          from pbcrs_sys_code
+                         where sys_code_type = 'EnGuarAcctBusiLines') c on a.busilines =
+                                                                 c.sys_code
+    where b.etl_date = to_date(#{queryRptDate}, 'yyyy-mm-dd')
+    and g.datadate = to_date(#{queryRptDate}, 'yyyy-mm-dd')
+    group by c.sys_code_desc,g.sourcecustid
+    
+    ) suma group by sys_code_desc
+    
+    ) sumtotal
+    left join (select *
+		                     from pbcrs_report_code_mapping
+		                    where Sourcesys = 'MIS'
+		                      and Sourcefiled = 'CURRENCY') mapping
+		          on Cy = mapping.SYS_CODE
+    
+     group by sys_code_desc,mapping.sys_desc
+    
+    ) group by sysCodeDesc
+    
+  </select>
+  
+     <select id="selectD1List" resultType="map" parameterType="map">
+
+		select '未结清客户数' typeName, to_char(sum(ccnt)) total from (
+		select 0 ccnt,count(1) dcnt,sum(acctbal) bal from (
+		select b.acctcode,
+		               l.sourcecustid,
+		               p.acctbal
+		          from pbcrs_report_EnAcctBsSgmt b
+		          left join pbcrs_report_enacctbsinfsgmt a on b.acctbssgmtseqno =
+		                                                      a.acctbsinfsgmtseqno
+		          left join pbcrs_datacrms_enloaninfo l on b.acctcode = 'D10025210H0005' ||
+		                                                  l.acctcode
+		         
+		          left join pbcrs_report_ActLbltyInfSgmt p on b.acctbssgmtseqno =
+		                                                      p.actlbltyinfsgmtseqno
+		         where b.etl_date = to_date(#{queryRptDate}, 'yyyy-mm-dd')
+		           and l.datadate = to_date(#{queryRptDate}, 'yyyy-mm-dd')
+		           and b.accttype='D1'
+		union 
+		select  b.acctcode,
+		               l.sourcecustid,
+		               p.acctbal
+		          from pbcrs_report_EnAcctBsSgmt b
+		          left join pbcrs_report_enacctbsinfsgmt a on b.acctbssgmtseqno =
+		                                                      a.acctbsinfsgmtseqno
+		          left join pbcrs_datasln_enloaninfo l on b.acctcode = 'D10025210H0005' ||
+		                                                  l.acctcode
+		        
+		          left join pbcrs_report_ActLbltyInfSgmt p on b.acctbssgmtseqno =
+		                                                      p.actlbltyinfsgmtseqno
+		         where b.etl_date = to_date(#{queryRptDate}, 'yyyy-mm-dd')
+		           and l.datadate = to_date(#{queryRptDate}, 'yyyy-mm-dd')
+		           and b.accttype='D1'
+		           )
+		summ 
+		union 
+		select count(1) ccnt,0 dcnt,0 bal from (
+		select sourcecustid from (
+		select b.acctcode,
+		               l.sourcecustid,
+		               p.acctbal
+		          from pbcrs_report_EnAcctBsSgmt b
+		          left join pbcrs_report_enacctbsinfsgmt a on b.acctbssgmtseqno =
+		                                                      a.acctbsinfsgmtseqno
+		          left join pbcrs_datacrms_enloaninfo l on b.acctcode = 'D10025210H0005' ||
+		                                                  l.acctcode
+		       
+		          left join pbcrs_report_ActLbltyInfSgmt p on b.acctbssgmtseqno =
+		                                                      p.actlbltyinfsgmtseqno
+		         where b.etl_date = to_date(#{queryRptDate}, 'yyyy-mm-dd')
+		           and l.datadate = to_date(#{queryRptDate}, 'yyyy-mm-dd')
+		           and b.accttype='D1'
+		union 
+		select b.acctcode,
+		               l.sourcecustid,
+		               p.acctbal
+		          from pbcrs_report_EnAcctBsSgmt b
+		          left join pbcrs_report_enacctbsinfsgmt a on b.acctbssgmtseqno =
+		                                                      a.acctbsinfsgmtseqno
+		          left join pbcrs_datasln_enloaninfo l on b.acctcode = 'D10025210H0005' ||
+		                                                  l.acctcode
+		       
+		          left join pbcrs_report_ActLbltyInfSgmt p on b.acctbssgmtseqno =
+		                                                      p.actlbltyinfsgmtseqno
+		         where b.etl_date = to_date(#{queryRptDate}, 'yyyy-mm-dd')
+		           and l.datadate = to_date(#{queryRptDate}, 'yyyy-mm-dd')
+		           AND b.accttype='D1'
+		           )
+		summ group by sourcecustid) sumc)
+		sumtotal 
+		union all
+		select '未结清账户笔数' typeName,to_char(sum(dcnt)) total from (
+		select 0 ccnt,count(1) dcnt,sum(acctbal) bal from (
+		select b.acctcode,
+		               l.sourcecustid,
+		               p.acctbal
+		          from pbcrs_report_EnAcctBsSgmt b
+		          left join pbcrs_report_enacctbsinfsgmt a on b.acctbssgmtseqno =
+		                                                      a.acctbsinfsgmtseqno
+		          left join pbcrs_datacrms_enloaninfo l on b.acctcode = 'D10025210H0005' ||
+		                                                  l.acctcode
+		         
+		          left join pbcrs_report_ActLbltyInfSgmt p on b.acctbssgmtseqno =
+		                                                      p.actlbltyinfsgmtseqno
+		         where b.etl_date = to_date(#{queryRptDate}, 'yyyy-mm-dd')
+		           and l.datadate = to_date(#{queryRptDate}, 'yyyy-mm-dd')
+		           and b.accttype='D1'
+		union 
+		select  b.acctcode,
+		               l.sourcecustid,
+		               p.acctbal
+		          from pbcrs_report_EnAcctBsSgmt b
+		          left join pbcrs_report_enacctbsinfsgmt a on b.acctbssgmtseqno =
+		                                                      a.acctbsinfsgmtseqno
+		          left join pbcrs_datasln_enloaninfo l on b.acctcode = 'D10025210H0005' ||
+		                                                  l.acctcode
+		        
+		          left join pbcrs_report_ActLbltyInfSgmt p on b.acctbssgmtseqno =
+		                                                      p.actlbltyinfsgmtseqno
+		         where b.etl_date = to_date(#{queryRptDate}, 'yyyy-mm-dd')
+		           and l.datadate = to_date(#{queryRptDate}, 'yyyy-mm-dd')
+		           and b.accttype='D1'
+		           )
+		summ 
+		union 
+		select count(1) ccnt,0 dcnt,0 bal from (
+		select sourcecustid from (
+		select b.acctcode,
+		               l.sourcecustid,
+		               p.acctbal
+		          from pbcrs_report_EnAcctBsSgmt b
+		          left join pbcrs_report_enacctbsinfsgmt a on b.acctbssgmtseqno =
+		                                                      a.acctbsinfsgmtseqno
+		          left join pbcrs_datacrms_enloaninfo l on b.acctcode = 'D10025210H0005' ||
+		                                                  l.acctcode
+		       
+		          left join pbcrs_report_ActLbltyInfSgmt p on b.acctbssgmtseqno =
+		                                                      p.actlbltyinfsgmtseqno
+		         where b.etl_date = to_date(#{queryRptDate}, 'yyyy-mm-dd')
+		           and l.datadate = to_date(#{queryRptDate}, 'yyyy-mm-dd')
+		           and b.accttype='D1'
+		union 
+		select b.acctcode,
+		               l.sourcecustid,
+		               p.acctbal
+		          from pbcrs_report_EnAcctBsSgmt b
+		          left join pbcrs_report_enacctbsinfsgmt a on b.acctbssgmtseqno =
+		                                                      a.acctbsinfsgmtseqno
+		          left join pbcrs_datasln_enloaninfo l on b.acctcode = 'D10025210H0005' ||
+		                                                  l.acctcode
+		       
+		          left join pbcrs_report_ActLbltyInfSgmt p on b.acctbssgmtseqno =
+		                                                      p.actlbltyinfsgmtseqno
+		         where b.etl_date = to_date(#{queryRptDate}, 'yyyy-mm-dd')
+		           and l.datadate = to_date(#{queryRptDate}, 'yyyy-mm-dd')
+		           AND b.accttype='D1'
+		           )
+		summ group by sourcecustid) sumc)
+		sumtotal 
+		
+		union all
+		
+	
+		select '未结清账户余额' typeName,to_char(wm_concat(cy||':'||total))  total from (
+		  select sum(bal) as total,mapping.sys_desc cy from (
+		    select 0 ccnt,count(1) dcnt,sum(acctbal) bal,cy from (
+		    select b.acctcode,
+		                   l.sourcecustid,
+		                   a.cy,
+		                   p.acctbal
+		              from pbcrs_report_EnAcctBsSgmt b
+		              left join pbcrs_report_enacctbsinfsgmt a on b.acctbssgmtseqno =
+		                                                          a.acctbsinfsgmtseqno
+		              left join pbcrs_datacrms_enloaninfo l on b.acctcode = 'D10025210H0005' ||
+		                                                      l.acctcode
+		             
+		              left join pbcrs_report_ActLbltyInfSgmt p on b.acctbssgmtseqno =
+		                                                          p.actlbltyinfsgmtseqno
+		             where b.etl_date = to_date(#{queryRptDate}, 'yyyy-mm-dd')
+		               and l.datadate = to_date(#{queryRptDate}, 'yyyy-mm-dd')
+		               and b.accttype='D1'
+		    union 
+		    select  b.acctcode,
+		                   l.sourcecustid,
+		                   a.cy,
+		                   p.acctbal
+		              from pbcrs_report_EnAcctBsSgmt b
+		              left join pbcrs_report_enacctbsinfsgmt a on b.acctbssgmtseqno =
+		                                                          a.acctbsinfsgmtseqno
+		              left join pbcrs_datasln_enloaninfo l on b.acctcode = 'D10025210H0005' ||
+		                                                      l.acctcode
+		            
+		              left join pbcrs_report_ActLbltyInfSgmt p on b.acctbssgmtseqno =
+		                                                          p.actlbltyinfsgmtseqno
+		             where b.etl_date = to_date(#{queryRptDate}, 'yyyy-mm-dd')
+		               and l.datadate = to_date(#{queryRptDate}, 'yyyy-mm-dd')
+		               and b.accttype='D1'
+		               )summ  group by cy
+		    union 
+		    select count(1) ccnt,0 dcnt,0 bal,'CNY' cy from (
+		    select sourcecustid from (
+		    select b.acctcode,
+		                   l.sourcecustid,
+		                   p.acctbal
+		              from pbcrs_report_EnAcctBsSgmt b
+		              left join pbcrs_report_enacctbsinfsgmt a on b.acctbssgmtseqno =
+		                                                          a.acctbsinfsgmtseqno
+		              left join pbcrs_datacrms_enloaninfo l on b.acctcode = 'D10025210H0005' ||
+		                                                      l.acctcode
+		           
+		              left join pbcrs_report_ActLbltyInfSgmt p on b.acctbssgmtseqno =
+		                                                          p.actlbltyinfsgmtseqno
+		             where b.etl_date = to_date(#{queryRptDate}, 'yyyy-mm-dd')
+		               and l.datadate = to_date(#{queryRptDate}, 'yyyy-mm-dd')
+		               and b.accttype='D1'
+		    union 
+		    select b.acctcode,
+		                   l.sourcecustid,
+		                   p.acctbal
+		              from pbcrs_report_EnAcctBsSgmt b
+		              left join pbcrs_report_enacctbsinfsgmt a on b.acctbssgmtseqno =
+		                                                          a.acctbsinfsgmtseqno
+		              left join pbcrs_datasln_enloaninfo l on b.acctcode = 'D10025210H0005' ||
+		                                                      l.acctcode
+		           
+		              left join pbcrs_report_ActLbltyInfSgmt p on b.acctbssgmtseqno =
+		                                                          p.actlbltyinfsgmtseqno
+		             where b.etl_date = to_date(#{queryRptDate}, 'yyyy-mm-dd')
+		               and l.datadate = to_date(#{queryRptDate}, 'yyyy-mm-dd')
+		               AND b.accttype='D1'
+		               )
+		    summ group by sourcecustid)sumc
+		    )sumtotal
+		     left join (select *
+		                         from pbcrs_report_code_mapping
+		                        where Sourcesys = 'MIS'
+		                          and Sourcefiled = 'CURRENCY') mapping
+		              on Cy = mapping.SYS_CODE
+		  
+		      group by mapping.sys_desc
+		    )
+  </select>
+  
+  <select id="selectD2List" resultType="map" parameterType="map">
+
+		select '未结清客户数' typeName, to_char(sum(ccnt)) total from (
+    select 0 ccnt,count(1) dcnt,sum(acctbal) bal from (
+    select b.acctcode,
+                   l.sourcecustid,
+                   p.acctbal
+              from pbcrs_report_EnAcctBsSgmt b
+              left join pbcrs_report_enacctbsinfsgmt a on b.acctbssgmtseqno =
+                                                          a.acctbsinfsgmtseqno
+              left join pbcrs_datacrms_enloaninfo l on b.acctcode = 'D10025210H0005' ||
+                                                      l.acctcode
+             
+              left join pbcrs_report_ActLbltyInfSgmt p on b.acctbssgmtseqno =
+                                                          p.actlbltyinfsgmtseqno
+             where b.etl_date = to_date(#{queryRptDate}, 'yyyy-mm-dd')
+               and l.datadate = to_date(#{queryRptDate}, 'yyyy-mm-dd')
+               and b.accttype='D2'
+    union 
+    select  b.acctcode,
+                   l.sourcecustid,
+                   p.acctbal
+              from pbcrs_report_EnAcctBsSgmt b
+              left join pbcrs_report_enacctbsinfsgmt a on b.acctbssgmtseqno =
+                                                          a.acctbsinfsgmtseqno
+              left join pbcrs_datasln_enloaninfo l on b.acctcode = 'D10025210H0005' ||
+                                                      l.acctcode
+            
+              left join pbcrs_report_ActLbltyInfSgmt p on b.acctbssgmtseqno =
+                                                          p.actlbltyinfsgmtseqno
+             where b.etl_date = to_date(#{queryRptDate}, 'yyyy-mm-dd')
+               and l.datadate = to_date(#{queryRptDate}, 'yyyy-mm-dd')
+               and b.accttype='D2'
+               )
+    summ 
+    union 
+    select count(1) ccnt,0 dcnt,0 bal from (
+    select sourcecustid from (
+    select b.acctcode,
+                   l.sourcecustid,
+                   p.acctbal
+              from pbcrs_report_EnAcctBsSgmt b
+              left join pbcrs_report_enacctbsinfsgmt a on b.acctbssgmtseqno =
+                                                          a.acctbsinfsgmtseqno
+              left join pbcrs_datacrms_enloaninfo l on b.acctcode = 'D10025210H0005' ||
+                                                      l.acctcode
+           
+              left join pbcrs_report_ActLbltyInfSgmt p on b.acctbssgmtseqno =
+                                                          p.actlbltyinfsgmtseqno
+             where b.etl_date = to_date(#{queryRptDate}, 'yyyy-mm-dd')
+               and l.datadate = to_date(#{queryRptDate}, 'yyyy-mm-dd')
+               and b.accttype='D2'
+    union 
+    select b.acctcode,
+                   l.sourcecustid,
+                   p.acctbal
+              from pbcrs_report_EnAcctBsSgmt b
+              left join pbcrs_report_enacctbsinfsgmt a on b.acctbssgmtseqno =
+                                                          a.acctbsinfsgmtseqno
+              left join pbcrs_datasln_enloaninfo l on b.acctcode = 'D10025210H0005' ||
+                                                      l.acctcode
+           
+              left join pbcrs_report_ActLbltyInfSgmt p on b.acctbssgmtseqno =
+                                                          p.actlbltyinfsgmtseqno
+             where b.etl_date = to_date(#{queryRptDate}, 'yyyy-mm-dd')
+               and l.datadate = to_date(#{queryRptDate}, 'yyyy-mm-dd')
+               AND b.accttype='D2'
+               )
+    summ group by sourcecustid) sumc)
+    sumtotal 
+    union all
+    select '未结清账户笔数' typeName,to_char(sum(dcnt)) total from (
+    select 0 ccnt,count(1) dcnt,sum(acctbal) bal from (
+    select b.acctcode,
+                   l.sourcecustid,
+                   p.acctbal
+              from pbcrs_report_EnAcctBsSgmt b
+              left join pbcrs_report_enacctbsinfsgmt a on b.acctbssgmtseqno =
+                                                          a.acctbsinfsgmtseqno
+              left join pbcrs_datacrms_enloaninfo l on b.acctcode = 'D10025210H0005' ||
+                                                      l.acctcode
+             
+              left join pbcrs_report_ActLbltyInfSgmt p on b.acctbssgmtseqno =
+                                                          p.actlbltyinfsgmtseqno
+             where b.etl_date = to_date(#{queryRptDate}, 'yyyy-mm-dd')
+               and l.datadate = to_date(#{queryRptDate}, 'yyyy-mm-dd')
+               and b.accttype='D2'
+    union 
+    select  b.acctcode,
+                   l.sourcecustid,
+                   p.acctbal
+              from pbcrs_report_EnAcctBsSgmt b
+              left join pbcrs_report_enacctbsinfsgmt a on b.acctbssgmtseqno =
+                                                          a.acctbsinfsgmtseqno
+              left join pbcrs_datasln_enloaninfo l on b.acctcode = 'D10025210H0005' ||
+                                                      l.acctcode
+            
+              left join pbcrs_report_ActLbltyInfSgmt p on b.acctbssgmtseqno =
+                                                          p.actlbltyinfsgmtseqno
+             where b.etl_date = to_date(#{queryRptDate}, 'yyyy-mm-dd')
+               and l.datadate = to_date(#{queryRptDate}, 'yyyy-mm-dd')
+               and b.accttype='D2'
+               )
+    summ 
+    union 
+    select count(1) ccnt,0 dcnt,0 bal from (
+    select sourcecustid from (
+    select b.acctcode,
+                   l.sourcecustid,
+                   p.acctbal
+              from pbcrs_report_EnAcctBsSgmt b
+              left join pbcrs_report_enacctbsinfsgmt a on b.acctbssgmtseqno =
+                                                          a.acctbsinfsgmtseqno
+              left join pbcrs_datacrms_enloaninfo l on b.acctcode = 'D10025210H0005' ||
+                                                      l.acctcode
+           
+              left join pbcrs_report_ActLbltyInfSgmt p on b.acctbssgmtseqno =
+                                                          p.actlbltyinfsgmtseqno
+             where b.etl_date = to_date(#{queryRptDate}, 'yyyy-mm-dd')
+               and l.datadate = to_date(#{queryRptDate}, 'yyyy-mm-dd')
+               and b.accttype='D2'
+    union 
+    select b.acctcode,
+                   l.sourcecustid,
+                   p.acctbal
+              from pbcrs_report_EnAcctBsSgmt b
+              left join pbcrs_report_enacctbsinfsgmt a on b.acctbssgmtseqno =
+                                                          a.acctbsinfsgmtseqno
+              left join pbcrs_datasln_enloaninfo l on b.acctcode = 'D10025210H0005' ||
+                                                      l.acctcode
+           
+              left join pbcrs_report_ActLbltyInfSgmt p on b.acctbssgmtseqno =
+                                                          p.actlbltyinfsgmtseqno
+             where b.etl_date = to_date(#{queryRptDate}, 'yyyy-mm-dd')
+               and l.datadate = to_date(#{queryRptDate}, 'yyyy-mm-dd')
+               AND b.accttype='D2'
+               )
+    summ group by sourcecustid) sumc)
+    sumtotal 
+    
+    union all
+    
+
+	select '未结清账户余额' typeName,to_char(wm_concat(cy||':'||total))  total from (
+	  select sum(bal) as total,mapping.sys_desc cy from (
+	    select 0 ccnt,count(1) dcnt,sum(acctbal) bal,cy from (
+	    select b.acctcode,
+	                   l.sourcecustid,
+	                   a.cy,
+	                   p.acctbal
+	              from pbcrs_report_EnAcctBsSgmt b
+	              left join pbcrs_report_enacctbsinfsgmt a on b.acctbssgmtseqno =
+	                                                          a.acctbsinfsgmtseqno
+	              left join pbcrs_datacrms_enloaninfo l on b.acctcode = 'D10025210H0005' ||
+	                                                      l.acctcode
+	             
+	              left join pbcrs_report_ActLbltyInfSgmt p on b.acctbssgmtseqno =
+	                                                          p.actlbltyinfsgmtseqno
+	             where b.etl_date = to_date(#{queryRptDate}, 'yyyy-mm-dd')
+	               and l.datadate = to_date(#{queryRptDate}, 'yyyy-mm-dd')
+	               and b.accttype='D2'
+	    union 
+	    select  b.acctcode,
+	                   l.sourcecustid,
+	                   a.cy,
+	                   p.acctbal
+	              from pbcrs_report_EnAcctBsSgmt b
+	              left join pbcrs_report_enacctbsinfsgmt a on b.acctbssgmtseqno =
+	                                                          a.acctbsinfsgmtseqno
+	              left join pbcrs_datasln_enloaninfo l on b.acctcode = 'D10025210H0005' ||
+	                                                      l.acctcode
+	            
+	              left join pbcrs_report_ActLbltyInfSgmt p on b.acctbssgmtseqno =
+	                                                          p.actlbltyinfsgmtseqno
+	             where b.etl_date = to_date(#{queryRptDate}, 'yyyy-mm-dd')
+	               and l.datadate = to_date(#{queryRptDate}, 'yyyy-mm-dd')
+	               and b.accttype='D2'
+	               )summ  group by cy
+	    union 
+	    select count(1) ccnt,0 dcnt,0 bal,'CNY' cy from (
+	    select sourcecustid from (
+	    select b.acctcode,
+	                   l.sourcecustid,
+	                   p.acctbal
+	              from pbcrs_report_EnAcctBsSgmt b
+	              left join pbcrs_report_enacctbsinfsgmt a on b.acctbssgmtseqno =
+	                                                          a.acctbsinfsgmtseqno
+	              left join pbcrs_datacrms_enloaninfo l on b.acctcode = 'D10025210H0005' ||
+	                                                      l.acctcode
+	           
+	              left join pbcrs_report_ActLbltyInfSgmt p on b.acctbssgmtseqno =
+	                                                          p.actlbltyinfsgmtseqno
+	             where b.etl_date = to_date(#{queryRptDate}, 'yyyy-mm-dd')
+	               and l.datadate = to_date(#{queryRptDate}, 'yyyy-mm-dd')
+	               and b.accttype='D2'
+	    union 
+	    select b.acctcode,
+	                   l.sourcecustid,
+	                   p.acctbal
+	              from pbcrs_report_EnAcctBsSgmt b
+	              left join pbcrs_report_enacctbsinfsgmt a on b.acctbssgmtseqno =
+	                                                          a.acctbsinfsgmtseqno
+	              left join pbcrs_datasln_enloaninfo l on b.acctcode = 'D10025210H0005' ||
+	                                                      l.acctcode
+	           
+	              left join pbcrs_report_ActLbltyInfSgmt p on b.acctbssgmtseqno =
+	                                                          p.actlbltyinfsgmtseqno
+	             where b.etl_date = to_date(#{queryRptDate}, 'yyyy-mm-dd')
+	               and l.datadate = to_date(#{queryRptDate}, 'yyyy-mm-dd')
+	               AND b.accttype='D2'
+	               )
+	    summ group by sourcecustid)sumc
+	    )sumtotal
+	     left join (select *
+	                         from pbcrs_report_code_mapping
+	                        where Sourcesys = 'MIS'
+	                          and Sourcefiled = 'CURRENCY') mapping
+	              on Cy = mapping.SYS_CODE
+	  
+	      group by mapping.sys_desc
+	    )
+  </select>
+  
+  <select id="selectR4List" resultType="map" parameterType="map">
+
+		select '未结清客户数' typeName, to_char(sum(ccnt)) total from (
+    select 0 ccnt,count(1) dcnt,sum(acctbal) bal from (
+    select b.acctcode,
+                   l.sourcecustid,
+                   p.acctbal
+              from pbcrs_report_EnAcctBsSgmt b
+              left join pbcrs_report_enacctbsinfsgmt a on b.acctbssgmtseqno =
+                                                          a.acctbsinfsgmtseqno
+              left join pbcrs_datacrms_enloaninfo l on b.acctcode = 'D10025210H0005' ||
+                                                      l.acctcode
+             
+              left join pbcrs_report_ActLbltyInfSgmt p on b.acctbssgmtseqno =
+                                                          p.actlbltyinfsgmtseqno
+             where b.etl_date = to_date(#{queryRptDate}, 'yyyy-mm-dd')
+               and l.datadate = to_date(#{queryRptDate}, 'yyyy-mm-dd')
+               and b.accttype='R4'
+    union 
+    select  b.acctcode,
+                   l.sourcecustid,
+                   p.acctbal
+              from pbcrs_report_EnAcctBsSgmt b
+              left join pbcrs_report_enacctbsinfsgmt a on b.acctbssgmtseqno =
+                                                          a.acctbsinfsgmtseqno
+              left join pbcrs_datasln_enloaninfo l on b.acctcode = 'D10025210H0005' ||
+                                                      l.acctcode
+            
+              left join pbcrs_report_ActLbltyInfSgmt p on b.acctbssgmtseqno =
+                                                          p.actlbltyinfsgmtseqno
+             where b.etl_date = to_date(#{queryRptDate}, 'yyyy-mm-dd')
+               and l.datadate = to_date(#{queryRptDate}, 'yyyy-mm-dd')
+               and b.accttype='R4'
+               )
+    summ 
+    union 
+    select count(1) ccnt,0 dcnt,0 bal from (
+    select sourcecustid from (
+    select b.acctcode,
+                   l.sourcecustid,
+                   p.acctbal
+              from pbcrs_report_EnAcctBsSgmt b
+              left join pbcrs_report_enacctbsinfsgmt a on b.acctbssgmtseqno =
+                                                          a.acctbsinfsgmtseqno
+              left join pbcrs_datacrms_enloaninfo l on b.acctcode = 'D10025210H0005' ||
+                                                      l.acctcode
+           
+              left join pbcrs_report_ActLbltyInfSgmt p on b.acctbssgmtseqno =
+                                                          p.actlbltyinfsgmtseqno
+             where b.etl_date = to_date(#{queryRptDate}, 'yyyy-mm-dd')
+               and l.datadate = to_date(#{queryRptDate}, 'yyyy-mm-dd')
+               and b.accttype='R4'
+    union 
+    select b.acctcode,
+                   l.sourcecustid,
+                   p.acctbal
+              from pbcrs_report_EnAcctBsSgmt b
+              left join pbcrs_report_enacctbsinfsgmt a on b.acctbssgmtseqno =
+                                                          a.acctbsinfsgmtseqno
+              left join pbcrs_datasln_enloaninfo l on b.acctcode = 'D10025210H0005' ||
+                                                      l.acctcode
+           
+              left join pbcrs_report_ActLbltyInfSgmt p on b.acctbssgmtseqno =
+                                                          p.actlbltyinfsgmtseqno
+             where b.etl_date = to_date(#{queryRptDate}, 'yyyy-mm-dd')
+               and l.datadate = to_date(#{queryRptDate}, 'yyyy-mm-dd')
+               AND b.accttype='R4'
+               )
+    summ group by sourcecustid) sumc)
+    sumtotal 
+    union all
+    select '未结清账户笔数' typeName,to_char(sum(dcnt)) total from (
+    select 0 ccnt,count(1) dcnt,sum(acctbal) bal from (
+    select b.acctcode,
+                   l.sourcecustid,
+                   p.acctbal
+              from pbcrs_report_EnAcctBsSgmt b
+              left join pbcrs_report_enacctbsinfsgmt a on b.acctbssgmtseqno =
+                                                          a.acctbsinfsgmtseqno
+              left join pbcrs_datacrms_enloaninfo l on b.acctcode = 'D10025210H0005' ||
+                                                      l.acctcode
+             
+              left join pbcrs_report_ActLbltyInfSgmt p on b.acctbssgmtseqno =
+                                                          p.actlbltyinfsgmtseqno
+             where b.etl_date = to_date(#{queryRptDate}, 'yyyy-mm-dd')
+               and l.datadate = to_date(#{queryRptDate}, 'yyyy-mm-dd')
+               and b.accttype='R4'
+    union 
+    select  b.acctcode,
+                   l.sourcecustid,
+                   p.acctbal
+              from pbcrs_report_EnAcctBsSgmt b
+              left join pbcrs_report_enacctbsinfsgmt a on b.acctbssgmtseqno =
+                                                          a.acctbsinfsgmtseqno
+              left join pbcrs_datasln_enloaninfo l on b.acctcode = 'D10025210H0005' ||
+                                                      l.acctcode
+            
+              left join pbcrs_report_ActLbltyInfSgmt p on b.acctbssgmtseqno =
+                                                          p.actlbltyinfsgmtseqno
+             where b.etl_date = to_date(#{queryRptDate}, 'yyyy-mm-dd')
+               and l.datadate = to_date(#{queryRptDate}, 'yyyy-mm-dd')
+               and b.accttype='R4'
+               )
+    summ 
+    union 
+    select count(1) ccnt,0 dcnt,0 bal from (
+    select sourcecustid from (
+    select b.acctcode,
+                   l.sourcecustid,
+                   p.acctbal
+              from pbcrs_report_EnAcctBsSgmt b
+              left join pbcrs_report_enacctbsinfsgmt a on b.acctbssgmtseqno =
+                                                          a.acctbsinfsgmtseqno
+              left join pbcrs_datacrms_enloaninfo l on b.acctcode = 'D10025210H0005' ||
+                                                      l.acctcode
+           
+              left join pbcrs_report_ActLbltyInfSgmt p on b.acctbssgmtseqno =
+                                                          p.actlbltyinfsgmtseqno
+             where b.etl_date = to_date(#{queryRptDate}, 'yyyy-mm-dd')
+               and l.datadate = to_date(#{queryRptDate}, 'yyyy-mm-dd')
+               and b.accttype='R4'
+    union 
+    select b.acctcode,
+                   l.sourcecustid,
+                   p.acctbal
+              from pbcrs_report_EnAcctBsSgmt b
+              left join pbcrs_report_enacctbsinfsgmt a on b.acctbssgmtseqno =
+                                                          a.acctbsinfsgmtseqno
+              left join pbcrs_datasln_enloaninfo l on b.acctcode = 'D10025210H0005' ||
+                                                      l.acctcode
+           
+              left join pbcrs_report_ActLbltyInfSgmt p on b.acctbssgmtseqno =
+                                                          p.actlbltyinfsgmtseqno
+             where b.etl_date = to_date(#{queryRptDate}, 'yyyy-mm-dd')
+               and l.datadate = to_date(#{queryRptDate}, 'yyyy-mm-dd')
+               AND b.accttype='R4'
+               )
+    summ group by sourcecustid) sumc)
+    sumtotal 
+    
+    union all
+    
+
+	select '未结清账户余额' typeName,to_char(wm_concat(cy||':'||total))  total from (
+	  select sum(bal) as total,mapping.sys_desc cy from (
+	    select 0 ccnt,count(1) dcnt,sum(acctbal) bal,cy from (
+	    select b.acctcode,
+	                   l.sourcecustid,
+	                   a.cy,
+	                   p.acctbal
+	              from pbcrs_report_EnAcctBsSgmt b
+	              left join pbcrs_report_enacctbsinfsgmt a on b.acctbssgmtseqno =
+	                                                          a.acctbsinfsgmtseqno
+	              left join pbcrs_datacrms_enloaninfo l on b.acctcode = 'D10025210H0005' ||
+	                                                      l.acctcode
+	             
+	              left join pbcrs_report_ActLbltyInfSgmt p on b.acctbssgmtseqno =
+	                                                          p.actlbltyinfsgmtseqno
+	             where b.etl_date = to_date(#{queryRptDate}, 'yyyy-mm-dd')
+	               and l.datadate = to_date(#{queryRptDate}, 'yyyy-mm-dd')
+	               and b.accttype='R4'
+	    union 
+	    select  b.acctcode,
+	                   l.sourcecustid,
+	                   a.cy,
+	                   p.acctbal
+	              from pbcrs_report_EnAcctBsSgmt b
+	              left join pbcrs_report_enacctbsinfsgmt a on b.acctbssgmtseqno =
+	                                                          a.acctbsinfsgmtseqno
+	              left join pbcrs_datasln_enloaninfo l on b.acctcode = 'D10025210H0005' ||
+	                                                      l.acctcode
+	            
+	              left join pbcrs_report_ActLbltyInfSgmt p on b.acctbssgmtseqno =
+	                                                          p.actlbltyinfsgmtseqno
+	             where b.etl_date = to_date(#{queryRptDate}, 'yyyy-mm-dd')
+	               and l.datadate = to_date(#{queryRptDate}, 'yyyy-mm-dd')
+	               and b.accttype='R4'
+	               )summ  group by cy
+	    union 
+	    select count(1) ccnt,0 dcnt,0 bal,'CNY' cy from (
+	    select sourcecustid from (
+	    select b.acctcode,
+	                   l.sourcecustid,
+	                   p.acctbal
+	              from pbcrs_report_EnAcctBsSgmt b
+	              left join pbcrs_report_enacctbsinfsgmt a on b.acctbssgmtseqno =
+	                                                          a.acctbsinfsgmtseqno
+	              left join pbcrs_datacrms_enloaninfo l on b.acctcode = 'D10025210H0005' ||
+	                                                      l.acctcode
+	           
+	              left join pbcrs_report_ActLbltyInfSgmt p on b.acctbssgmtseqno =
+	                                                          p.actlbltyinfsgmtseqno
+	             where b.etl_date = to_date(#{queryRptDate}, 'yyyy-mm-dd')
+	               and l.datadate = to_date(#{queryRptDate}, 'yyyy-mm-dd')
+	               and b.accttype='R4'
+	    union 
+	    select b.acctcode,
+	                   l.sourcecustid,
+	                   p.acctbal
+	              from pbcrs_report_EnAcctBsSgmt b
+	              left join pbcrs_report_enacctbsinfsgmt a on b.acctbssgmtseqno =
+	                                                          a.acctbsinfsgmtseqno
+	              left join pbcrs_datasln_enloaninfo l on b.acctcode = 'D10025210H0005' ||
+	                                                      l.acctcode
+	           
+	              left join pbcrs_report_ActLbltyInfSgmt p on b.acctbssgmtseqno =
+	                                                          p.actlbltyinfsgmtseqno
+	             where b.etl_date = to_date(#{queryRptDate}, 'yyyy-mm-dd')
+	               and l.datadate = to_date(#{queryRptDate}, 'yyyy-mm-dd')
+	               AND b.accttype='R4'
+	               )
+	    summ group by sourcecustid)sumc
+	    )sumtotal
+	     left join (select *
+	                         from pbcrs_report_code_mapping
+	                        where Sourcesys = 'MIS'
+	                          and Sourcefiled = 'CURRENCY') mapping
+	              on Cy = mapping.SYS_CODE
+	  
+	      group by mapping.sys_desc
+	    )
+  </select>
+  
+  <select id="selectDcList" resultType="map" parameterType="map">
+		select sysCodeDesc,sum(custTotal) custTotal,sum(acctTotal) acctTotal , to_char(wm_concat(cy||':'||total)) total  from (
+select sys_code_desc sysCodeDesc,sum(ccnt) custTotal,sum(dcnt) acctTotal,sum(bal) as total,mapping.sys_desc cy from (
+    select  sys_code_desc,0 ccnt,count(1) dcnt,sum(acctbal) bal,cy from (
+    select b.acctcode,
+                   a.busilines,
+                   l.sourcecustid,
+                   c.sys_code_desc,
+                   a.cy,
+                   p.acctbal
+              from pbcrs_report_EnAcctBsSgmt b
+              left join pbcrs_report_enacctbsinfsgmt a on b.acctbssgmtseqno =
+                                                          a.acctbsinfsgmtseqno
+              left join pbcrs_datacrms_enloaninfo l on b.acctcode = 'D10025210H0005' ||
+                                                      l.acctcode
+              left join (select *
+                          from pbcrs_sys_code
+                         where sys_code_type = 'BusiLines') c on a.busilines =
+                                                                 c.sys_code
+              left join pbcrs_report_ActLbltyInfSgmt p on b.acctbssgmtseqno =
+                                                          p.actlbltyinfsgmtseqno
+             where b.etl_date = to_date(#{queryRptDate}, 'yyyy-mm-dd')
+               and l.datadate = to_date(#{queryRptDate}, 'yyyy-mm-dd')
+               and b.sourcesys='CRMS'
+              
+    union 
+    select b.acctcode,
+                   a.busilines,
+                   l.sourcecustid,
+                   c.sys_code_desc,
+                   a.cy,
+                   p.acctbal
+              from pbcrs_report_EnAcctBsSgmt b
+              left join pbcrs_report_enacctbsinfsgmt a on b.acctbssgmtseqno =
+                                                          a.acctbsinfsgmtseqno
+              left join pbcrs_datasln_enloaninfo l on b.acctcode = 'D10025210H0005' ||
+                                                      l.acctcode
+              left join (select *
+                          from pbcrs_sys_code
+                         where sys_code_type = 'BusiLines') c on a.busilines =
+                                                                 c.sys_code
+              left join pbcrs_report_ActLbltyInfSgmt p on b.acctbssgmtseqno =
+                                                          p.actlbltyinfsgmtseqno
+             where b.etl_date = to_date(#{queryRptDate}, 'yyyy-mm-dd')
+               and l.datadate = to_date(#{queryRptDate}, 'yyyy-mm-dd'))
+    summ group by summ.sys_code_desc,cy
+    
+    
+    union 
+    select sys_code_desc sysCodeDesc,count(1) custTotal,0 acctTotal,0 total, 'CNY'cy from (
+    select sys_code_desc,sourcecustid from (
+    select b.acctcode,
+                   a.busilines,
+                   l.sourcecustid,
+                   c.sys_code_desc,
+                   p.acctbal
+              from pbcrs_report_EnAcctBsSgmt b
+              
+              left join pbcrs_report_enacctbsinfsgmt a on b.acctbssgmtseqno =
+                                                          a.acctbsinfsgmtseqno
+              left join pbcrs_datacrms_enloaninfo l on b.acctcode = 'D10025210H0005' ||
+                                                      l.acctcode
+              left join (select *
+                          from pbcrs_sys_code
+                         where sys_code_type = 'BusiLines') c on a.busilines =
+                                                                 c.sys_code
+              left join pbcrs_report_ActLbltyInfSgmt p on b.acctbssgmtseqno =
+                                                          p.actlbltyinfsgmtseqno
+             where b.etl_date = to_date(#{queryRptDate}, 'yyyy-mm-dd')
+               and l.datadate = to_date(#{queryRptDate}, 'yyyy-mm-dd')
+               and b.sourcesys='CRMS'
+    union 
+    select b.acctcode,
+                   a.busilines,
+                   l.sourcecustid,
+                   c.sys_code_desc,
+                   p.acctbal
+              from pbcrs_report_EnAcctBsSgmt b
+              left join pbcrs_report_enacctbsinfsgmt a on b.acctbssgmtseqno =
+                                                          a.acctbsinfsgmtseqno
+              left join pbcrs_datasln_enloaninfo l on b.acctcode = 'D10025210H0005' ||
+                                                      l.acctcode
+              left join (select *
+                          from pbcrs_sys_code
+                         where sys_code_type = 'BusiLines') c on a.busilines =
+                                                                 c.sys_code
+              left join pbcrs_report_ActLbltyInfSgmt p on b.acctbssgmtseqno =
+                                                          p.actlbltyinfsgmtseqno
+             where b.etl_date = to_date(#{queryRptDate}, 'yyyy-mm-dd')
+               and l.datadate = to_date(#{queryRptDate}, 'yyyy-mm-dd'))
+    summ group by sys_code_desc,sourcecustid
+    )
+     sumc group by sys_code_desc
+
+    )sumtotal
+     left join (select *
+                         from pbcrs_report_code_mapping
+                        where Sourcesys = 'MIS'
+                          and Sourcefiled = 'CURRENCY') mapping
+              on Cy = mapping.SYS_CODE
+    
+     group by sys_code_desc,mapping.sys_desc
+    ) group by sysCodeDesc
+	
+    
+  </select>
+  
+  <select id="selectReportList" resultType="map" parameterType="map">
+		select '企业资产负债表涉及客户数' typeName, count(1) total from (
+    select distinct( substr(b.balancesheetbssgmtseqno, 1, 14))
+      from PBCRS_REPORT_BALANCESHEETBSSGM b
+     where b.etl_date = to_date(#{queryRptDate}, 'yyyy-mm-dd') )
+    union all
+     select '企业利润及利润分配表涉及客户数' typeName,  count(1) total from (
+    select distinct( substr(b.incomestatementpa2007sgmtseqno, 1, 14))
+      from Pbcrs_Report_Incomestatement07 b
+     where b.etl_date = to_date(#{queryRptDate}, 'yyyy-mm-dd') )
+    union all
+     select '企业现金流量表涉及客户数' typeName,  count(1) total from (
+    select distinct( substr(b.cashflows2007sgmtseqno, 1, 14))
+      from Pbcrs_Report_Cashflows2007sgmt b
+     where b.etl_date = to_date(#{queryRptDate}, 'yyyy-mm-dd') )
+     union all
+     select '事业单位资产负债表涉及客户数' typeName,  count(1) total from (
+    select distinct( substr(b.INSTITUTIONBSBSSGMTSEQNO, 1, 14))
+      from pbcrs_report_InsBalSheBsSgmt b
+     where b.etl_date = to_date(#{queryRptDate}, 'yyyy-mm-dd'))
+     union all
+     select '事业单位收入支出表涉及客户数' typeName,  count(1) total from (
+    select distinct( substr(b.INSTITUTIONBSBSSGMTSEQNO, 1, 14))
+      from pbcrs_report_InsBalSheBsSgmt b
+     where b.etl_date = to_date(#{queryRptDate}, 'yyyy-mm-dd'))
+  </select>
+  
+  <select id="selectBaseList" resultType="map" parameterType="map">
+		select '总客户数' typeName, tcunt total
+		  from (select (select count(1)
+		                  from pbcrs_report_enbasinfbssgmt
+		                 where etl_date = to_date(#{queryRptDate}, 'yyyy-mm-dd')) tcunt,
+		               (select count(1)
+		                  from (select distinct sourcecustid
+		                          from (select g.sourcecustid
+		                                  from pbcrs_report_EnGuarAcctBsSgmt b
+		                                  left join pbcrs_datacrms_enguarantyinfo g
+		                                    on b.acctcode =
+		                                       'D10025210H0005' || g.acctcode
+		                                  left join pbcrs_report_EnGuaAccBsInfSgmt a
+		                                    on b.guaracctbssgmtseqno =
+		                                       a.guaracctbsinfsgmtseqno
+		                                  left join (select *
+		                                              from pbcrs_sys_code
+		                                             where sys_code_type =
+		                                                   'EnGuarAcctBusiLines') c
+		                                    on a.busilines = c.sys_code
+		                                 where b.etl_date =
+		                                       to_date(#{queryRptDate}, 'yyyy-mm-dd')
+		                                   and g.datadate =
+		                                       to_date(#{queryRptDate}, 'yyyy-mm-dd')
+		                                union
+		                                
+		                                select l.sourcecustid
+		                                
+		                                  from pbcrs_report_EnAcctBsSgmt b
+		                                  left join pbcrs_report_enacctbsinfsgmt a
+		                                    on b.acctbssgmtseqno = a.acctbsinfsgmtseqno
+		                                  left join pbcrs_datacrms_enloaninfo l
+		                                    on b.acctcode =
+		                                       'D10025210H0005' || l.acctcode
+		                                
+		                                 where b.etl_date =
+		                                       to_date(#{queryRptDate}, 'yyyy-mm-dd')
+		                                   and l.datadate =
+		                                       to_date(#{queryRptDate}, 'yyyy-mm-dd')
+		                                union
+		                                
+		                                select l.sourcecustid
+		                                
+		                                  from pbcrs_report_EnAcctBsSgmt b
+		                                  left join pbcrs_report_enacctbsinfsgmt a
+		                                    on b.acctbssgmtseqno = a.acctbsinfsgmtseqno
+		                                  left join pbcrs_datasln_enloaninfo l
+		                                    on b.acctcode =
+		                                       'D10025210H0005' || l.acctcode
+		                                
+		                                 where b.etl_date =
+		                                       to_date(#{queryRptDate}, 'yyyy-mm-dd')
+		                                   and l.datadate =
+		                                       to_date(#{queryRptDate}, 'yyyy-mm-dd')) sumcust) sumtotal) uncunt
+		          from dual) aa
+		union all
+		select '未结清客户数' typeName, uncunt total
+		  from (select (select count(1)
+		                  from pbcrs_report_enbasinfbssgmt
+		                 where etl_date = to_date(#{queryRptDate}, 'yyyy-mm-dd')) tcunt,
+		               (select count(1)
+		                  from (select distinct sourcecustid
+		                          from (select g.sourcecustid
+		                                  from pbcrs_report_EnGuarAcctBsSgmt b
+		                                  left join pbcrs_datacrms_enguarantyinfo g
+		                                    on b.acctcode =
+		                                       'D10025210H0005' || g.acctcode
+		                                  left join pbcrs_report_EnGuaAccBsInfSgmt a
+		                                    on b.guaracctbssgmtseqno =
+		                                       a.guaracctbsinfsgmtseqno
+		                                  left join (select *
+		                                              from pbcrs_sys_code
+		                                             where sys_code_type =
+		                                                   'EnGuarAcctBusiLines') c
+		                                    on a.busilines = c.sys_code
+		                                 where b.etl_date =
+		                                       to_date(#{queryRptDate}, 'yyyy-mm-dd')
+		                                   and g.datadate =
+		                                       to_date(#{queryRptDate}, 'yyyy-mm-dd')
+		                                union
+		                                
+		                                select l.sourcecustid
+		                                
+		                                  from pbcrs_report_EnAcctBsSgmt b
+		                                  left join pbcrs_report_enacctbsinfsgmt a
+		                                    on b.acctbssgmtseqno = a.acctbsinfsgmtseqno
+		                                  left join pbcrs_datacrms_enloaninfo l
+		                                    on b.acctcode =
+		                                       'D10025210H0005' || l.acctcode
+		                                
+		                                 where b.etl_date =
+		                                       to_date(#{queryRptDate}, 'yyyy-mm-dd')
+		                                   and l.datadate =
+		                                       to_date(#{queryRptDate}, 'yyyy-mm-dd')
+		                                union
+		                                
+		                                select l.sourcecustid
+		                                
+		                                  from pbcrs_report_EnAcctBsSgmt b
+		                                  left join pbcrs_report_enacctbsinfsgmt a
+		                                    on b.acctbssgmtseqno = a.acctbsinfsgmtseqno
+		                                  left join pbcrs_datasln_enloaninfo l
+		                                    on b.acctcode =
+		                                       'D10025210H0005' || l.acctcode
+		                                
+		                                 where b.etl_date =
+		                                       to_date(#{queryRptDate}, 'yyyy-mm-dd')
+		                                   and l.datadate =
+		                                       to_date(#{queryRptDate}, 'yyyy-mm-dd')) sumcust) sumtotal) uncunt
+		          from dual) aa
+		
+		union all
+		select '基本户客户数' typeName, tcunt - uncunt total
+		  from (select (select count(1)
+		                  from pbcrs_report_enbasinfbssgmt
+		                 where etl_date = to_date(#{queryRptDate}, 'yyyy-mm-dd')) tcunt,
+		               (select count(1)
+		                  from (select distinct sourcecustid
+		                          from (select g.sourcecustid
+		                                  from pbcrs_report_EnGuarAcctBsSgmt b
+		                                  left join pbcrs_datacrms_enguarantyinfo g
+		                                    on b.acctcode =
+		                                       'D10025210H0005' || g.acctcode
+		                                  left join pbcrs_report_EnGuaAccBsInfSgmt a
+		                                    on b.guaracctbssgmtseqno =
+		                                       a.guaracctbsinfsgmtseqno
+		                                  left join (select *
+		                                              from pbcrs_sys_code
+		                                             where sys_code_type =
+		                                                   'EnGuarAcctBusiLines') c
+		                                    on a.busilines = c.sys_code
+		                                 where b.etl_date =
+		                                       to_date(#{queryRptDate}, 'yyyy-mm-dd')
+		                                   and g.datadate =
+		                                       to_date(#{queryRptDate}, 'yyyy-mm-dd')
+		                                union
+		                                
+		                                select l.sourcecustid
+		                                
+		                                  from pbcrs_report_EnAcctBsSgmt b
+		                                  left join pbcrs_report_enacctbsinfsgmt a
+		                                    on b.acctbssgmtseqno = a.acctbsinfsgmtseqno
+		                                  left join pbcrs_datacrms_enloaninfo l
+		                                    on b.acctcode =
+		                                       'D10025210H0005' || l.acctcode
+		                                
+		                                 where b.etl_date =
+		                                       to_date(#{queryRptDate}, 'yyyy-mm-dd')
+		                                   and l.datadate =
+		                                       to_date(#{queryRptDate}, 'yyyy-mm-dd')
+		                                union
+		                                
+		                                select l.sourcecustid
+		                                
+		                                  from pbcrs_report_EnAcctBsSgmt b
+		                                  left join pbcrs_report_enacctbsinfsgmt a
+		                                    on b.acctbssgmtseqno = a.acctbsinfsgmtseqno
+		                                  left join pbcrs_datasln_enloaninfo l
+		                                    on b.acctcode =
+		                                       'D10025210H0005' || l.acctcode
+		                                
+		                                 where b.etl_date =
+		                                       to_date(#{queryRptDate}, 'yyyy-mm-dd')
+		                                   and l.datadate =
+		                                       to_date(#{queryRptDate}, 'yyyy-mm-dd')) sumcust) sumtotal) uncunt
+		          from dual) aa
+  </select>
+  
+  <select id="selectG1List" resultType="map" parameterType="map">
+		select '在保客户数' typeName, to_char(sum(ccnt)) total from (
+		select 0 ccnt,count(b.acctcode) dcnt,sum(g.loanamt) loanamt from pbcrs_report_EnGuarAcctBsSgmt b
+		left join pbcrs_report_EnGuaAccBsInfSgmt a on b.guaracctbssgmtseqno=a.guaracctbsinfsgmtseqno
+		left join PBCRS_REPORT_EGUARLTREPINFSGMT g on b.guaracctbssgmtseqno=g.guarrltrepymtinfsgmtseqno
+		 
+		  where b.etl_date = to_date(#{queryRptDate}, 'yyyy-mm-dd')
+		  and b.accttype='G1'
+		union 
+		select count(sourcecustid) ccnt,0 dcnt,0 loanamt from (
+		select g.sourcecustid from pbcrs_report_EnGuarAcctBsSgmt b left join
+		Pbcrs_Datacrms_Enguarantyinfo g on b.acctcode= 'D10025210H0005' || g.acctcode
+		left join pbcrs_report_EnGuaAccBsInfSgmt a on b.guaracctbssgmtseqno=a.guaracctbsinfsgmtseqno
+		
+		where b.etl_date = to_date(#{queryRptDate}, 'yyyy-mm-dd')
+		and g.datadate = to_date(#{queryRptDate}, 'yyyy-mm-dd')
+		AND b.accttype='G1'
+		group by g.sourcecustid
+		
+		) suma ) sumtotal 
+		union all 
+		select '在保账户笔数' typeName,to_char(sum(dcnt)) total  from (
+		select 0 ccnt,count(b.acctcode) dcnt,sum(g.loanamt) loanamt from pbcrs_report_EnGuarAcctBsSgmt b
+		left join pbcrs_report_EnGuaAccBsInfSgmt a on b.guaracctbssgmtseqno=a.guaracctbsinfsgmtseqno
+		left join PBCRS_REPORT_EGUARLTREPINFSGMT g on b.guaracctbssgmtseqno=g.guarrltrepymtinfsgmtseqno
+		 
+		  where b.etl_date = to_date(#{queryRptDate}, 'yyyy-mm-dd')
+		  and b.accttype='G1'
+		union 
+		select count(sourcecustid) ccnt,0 dcnt,0 loanamt from (
+		select g.sourcecustid from pbcrs_report_EnGuarAcctBsSgmt b left join
+		Pbcrs_Datacrms_Enguarantyinfo g on b.acctcode= 'D10025210H0005' || g.acctcode
+		left join pbcrs_report_EnGuaAccBsInfSgmt a on b.guaracctbssgmtseqno=a.guaracctbsinfsgmtseqno
+		
+		where b.etl_date = to_date(#{queryRptDate}, 'yyyy-mm-dd')
+		and g.datadate = to_date(#{queryRptDate}, 'yyyy-mm-dd')
+		AND b.accttype='G1'
+		group by g.sourcecustid
+		
+		) suma ) sumtotal 
+		union all 
+		
+	    select '在保账户余额' typeName,to_char(wm_concat(mapping.sys_desc||':'||sum(loanamt))) as total from (
+      
+      select 0 ccnt,count(b.acctcode) dcnt,sum(g.loanamt) loanamt,a.cy from pbcrs_report_EnGuarAcctBsSgmt b
+      left join pbcrs_report_EnGuaAccBsInfSgmt a on b.guaracctbssgmtseqno=a.guaracctbsinfsgmtseqno
+      left join PBCRS_REPORT_EGUARLTREPINFSGMT g on b.guaracctbssgmtseqno=g.guarrltrepymtinfsgmtseqno
+       
+        where b.etl_date = to_date(#{queryRptDate}, 'yyyy-mm-dd')
+        and b.accttype='G1'
+        group by a.cy
+        
+      union 
+      
+      select count(sourcecustid) ccnt,0 dcnt,0 loanamt,'CNY' cy from (
+      select g.sourcecustid from pbcrs_report_EnGuarAcctBsSgmt b left join
+      Pbcrs_Datacrms_Enguarantyinfo g on b.acctcode= 'D10025210H0005' || g.acctcode
+      left join pbcrs_report_EnGuaAccBsInfSgmt a on b.guaracctbssgmtseqno=a.guaracctbsinfsgmtseqno
+      
+      where b.etl_date = to_date(#{queryRptDate}, 'yyyy-mm-dd')
+      and g.datadate = to_date(#{queryRptDate}, 'yyyy-mm-dd')
+      AND b.accttype='G1'
+      group by g.sourcecustid
+      
+      ) suma 
+      ) sumtotal  
+       left join (select *
+                         from pbcrs_report_code_mapping
+                        where Sourcesys = 'MIS'
+                          and Sourcefiled = 'CURRENCY') mapping
+              on Cy = mapping.SYS_CODE
+      
+      group by mapping.sys_desc
+  </select>
+    
+  <select id="selectG2List" resultType="map" parameterType="map">
+		select '在保客户数' typeName, to_char(sum(ccnt)) total from (
+		select 0 ccnt,count(b.acctcode) dcnt,sum(g.loanamt) loanamt from pbcrs_report_EnGuarAcctBsSgmt b
+		left join pbcrs_report_EnGuaAccBsInfSgmt a on b.guaracctbssgmtseqno=a.guaracctbsinfsgmtseqno
+		left join PBCRS_REPORT_EGUARLTREPINFSGMT g on b.guaracctbssgmtseqno=g.guarrltrepymtinfsgmtseqno
+		 
+		  where b.etl_date = to_date(#{queryRptDate}, 'yyyy-mm-dd')
+		  and b.accttype='G2'
+		union 
+		select count(sourcecustid) ccnt,0 dcnt,0 loanamt from (
+		select g.sourcecustid from pbcrs_report_EnGuarAcctBsSgmt b left join
+		Pbcrs_Datacrms_Enguarantyinfo g on b.acctcode= 'D10025210H0005' || g.acctcode
+		left join pbcrs_report_EnGuaAccBsInfSgmt a on b.guaracctbssgmtseqno=a.guaracctbsinfsgmtseqno
+		
+		where b.etl_date = to_date(#{queryRptDate}, 'yyyy-mm-dd')
+		and g.datadate = to_date(#{queryRptDate}, 'yyyy-mm-dd')
+		AND b.accttype='G2'
+		group by g.sourcecustid
+		
+		) suma ) sumtotal 
+		union all 
+		select '在保账户笔数' typeName,to_char(sum(dcnt)) total  from (
+		select 0 ccnt,count(b.acctcode) dcnt,sum(g.loanamt) loanamt from pbcrs_report_EnGuarAcctBsSgmt b
+		left join pbcrs_report_EnGuaAccBsInfSgmt a on b.guaracctbssgmtseqno=a.guaracctbsinfsgmtseqno
+		left join PBCRS_REPORT_EGUARLTREPINFSGMT g on b.guaracctbssgmtseqno=g.guarrltrepymtinfsgmtseqno
+		 
+		  where b.etl_date = to_date(#{queryRptDate}, 'yyyy-mm-dd')
+		  and b.accttype='G2'
+		union 
+		select count(sourcecustid) ccnt,0 dcnt,0 loanamt from (
+		select g.sourcecustid from pbcrs_report_EnGuarAcctBsSgmt b left join
+		Pbcrs_Datacrms_Enguarantyinfo g on b.acctcode= 'D10025210H0005' || g.acctcode
+		left join pbcrs_report_EnGuaAccBsInfSgmt a on b.guaracctbssgmtseqno=a.guaracctbsinfsgmtseqno
+		
+		where b.etl_date = to_date(#{queryRptDate}, 'yyyy-mm-dd')
+		and g.datadate = to_date(#{queryRptDate}, 'yyyy-mm-dd')
+		AND b.accttype='G2'
+		group by g.sourcecustid
+		
+		) suma ) sumtotal 
+		union all 
+		
+    
+	   select '在保账户余额' typeName,to_char(wm_concat(mapping.sys_desc||':'||sum(loanamt))) as total from (
+      
+      select 0 ccnt,count(b.acctcode) dcnt,sum(g.loanamt) loanamt,a.cy from pbcrs_report_EnGuarAcctBsSgmt b
+      left join pbcrs_report_EnGuaAccBsInfSgmt a on b.guaracctbssgmtseqno=a.guaracctbsinfsgmtseqno
+      left join PBCRS_REPORT_EGUARLTREPINFSGMT g on b.guaracctbssgmtseqno=g.guarrltrepymtinfsgmtseqno
+       
+        where b.etl_date = to_date(#{queryRptDate}, 'yyyy-mm-dd')
+        and b.accttype='G2'
+        group by a.cy
+        
+      union 
+      
+      select count(sourcecustid) ccnt,0 dcnt,0 loanamt,'CNY' cy from (
+      select g.sourcecustid from pbcrs_report_EnGuarAcctBsSgmt b left join
+      Pbcrs_Datacrms_Enguarantyinfo g on b.acctcode= 'D10025210H0005' || g.acctcode
+      left join pbcrs_report_EnGuaAccBsInfSgmt a on b.guaracctbssgmtseqno=a.guaracctbsinfsgmtseqno
+      
+      where b.etl_date = to_date(#{queryRptDate}, 'yyyy-mm-dd')
+      and g.datadate = to_date(#{queryRptDate}, 'yyyy-mm-dd')
+      AND b.accttype='G2'
+      group by g.sourcecustid
+      
+      ) suma 
+      ) sumtotal  
+       left join (select *
+                         from pbcrs_report_code_mapping
+                        where Sourcesys = 'MIS'
+                          and Sourcefiled = 'CURRENCY') mapping
+              on Cy = mapping.SYS_CODE
+      
+      group by mapping.sys_desc
+    
+  </select>
+  
+    <select id="selectG3List" resultType="map" parameterType="map">
+		select '在保客户数' typeName, to_char(sum(ccnt)) total from (
+		select 0 ccnt,count(b.acctcode) dcnt,sum(g.loanamt) loanamt from pbcrs_report_EnGuarAcctBsSgmt b
+		left join pbcrs_report_EnGuaAccBsInfSgmt a on b.guaracctbssgmtseqno=a.guaracctbsinfsgmtseqno
+		left join PBCRS_REPORT_EGUARLTREPINFSGMT g on b.guaracctbssgmtseqno=g.guarrltrepymtinfsgmtseqno
+		 
+		  where b.etl_date = to_date(#{queryRptDate}, 'yyyy-mm-dd')
+		  and b.accttype='G3'
+		union 
+		select count(sourcecustid) ccnt,0 dcnt,0 loanamt from (
+		select g.sourcecustid from pbcrs_report_EnGuarAcctBsSgmt b left join
+		Pbcrs_Datacrms_Enguarantyinfo g on b.acctcode= 'D10025210H0005' || g.acctcode
+		left join pbcrs_report_EnGuaAccBsInfSgmt a on b.guaracctbssgmtseqno=a.guaracctbsinfsgmtseqno
+		
+		where b.etl_date = to_date(#{queryRptDate}, 'yyyy-mm-dd')
+		and g.datadate = to_date(#{queryRptDate}, 'yyyy-mm-dd')
+		AND b.accttype='G3'
+		group by g.sourcecustid
+		
+		) suma ) sumtotal 
+		union all 
+		select '在保账户笔数' typeName,to_char(sum(dcnt)) total  from (
+		select 0 ccnt,count(b.acctcode) dcnt,sum(g.loanamt) loanamt from pbcrs_report_EnGuarAcctBsSgmt b
+		left join pbcrs_report_EnGuaAccBsInfSgmt a on b.guaracctbssgmtseqno=a.guaracctbsinfsgmtseqno
+		left join PBCRS_REPORT_EGUARLTREPINFSGMT g on b.guaracctbssgmtseqno=g.guarrltrepymtinfsgmtseqno
+		 
+		  where b.etl_date = to_date(#{queryRptDate}, 'yyyy-mm-dd')
+		  and b.accttype='G3'
+		union 
+		select count(sourcecustid) ccnt,0 dcnt,0 loanamt from (
+		select g.sourcecustid from pbcrs_report_EnGuarAcctBsSgmt b left join
+		Pbcrs_Datacrms_Enguarantyinfo g on b.acctcode= 'D10025210H0005' || g.acctcode
+		left join pbcrs_report_EnGuaAccBsInfSgmt a on b.guaracctbssgmtseqno=a.guaracctbsinfsgmtseqno
+		
+		where b.etl_date = to_date(#{queryRptDate}, 'yyyy-mm-dd')
+		and g.datadate = to_date(#{queryRptDate}, 'yyyy-mm-dd')
+		AND b.accttype='G3'
+		group by g.sourcecustid
+		
+		) suma ) sumtotal 
+		union all 
+		
+    
+	    select '在保账户余额' typeName,to_char(wm_concat(mapping.sys_desc||':'||sum(loanamt))) as total from (
+      
+      select 0 ccnt,count(b.acctcode) dcnt,sum(g.loanamt) loanamt,a.cy from pbcrs_report_EnGuarAcctBsSgmt b
+      left join pbcrs_report_EnGuaAccBsInfSgmt a on b.guaracctbssgmtseqno=a.guaracctbsinfsgmtseqno
+      left join PBCRS_REPORT_EGUARLTREPINFSGMT g on b.guaracctbssgmtseqno=g.guarrltrepymtinfsgmtseqno
+       
+        where b.etl_date = to_date(#{queryRptDate}, 'yyyy-mm-dd')
+        and b.accttype='G3'
+        group by a.cy
+        
+      union 
+      
+      select count(sourcecustid) ccnt,0 dcnt,0 loanamt,'CNY' cy from (
+      select g.sourcecustid from pbcrs_report_EnGuarAcctBsSgmt b left join
+      Pbcrs_Datacrms_Enguarantyinfo g on b.acctcode= 'D10025210H0005' || g.acctcode
+      left join pbcrs_report_EnGuaAccBsInfSgmt a on b.guaracctbssgmtseqno=a.guaracctbsinfsgmtseqno
+      
+      where b.etl_date = to_date(#{queryRptDate}, 'yyyy-mm-dd')
+      and g.datadate = to_date(#{queryRptDate}, 'yyyy-mm-dd')
+      AND b.accttype='G3'
+      group by g.sourcecustid
+      
+      ) suma 
+      ) sumtotal  
+       left join (select *
+                         from pbcrs_report_code_mapping
+                        where Sourcesys = 'MIS'
+                          and Sourcefiled = 'CURRENCY') mapping
+              on Cy = mapping.SYS_CODE
+      
+      group by mapping.sys_desc
+  </select>
+  
+  <select id="selectClList" resultType="map" parameterType="map">
+		select '有效客户数' typeName, to_char(count(1)) total from (
+		select distinct(b.name) from pbcrs_report_EnCtrctBsSgmt b
+		where b.etl_date = to_date(#{queryRptDate}, 'yyyy-mm-dd'))
+		union all
+		select '有效授信协议数' typeName ,to_char(count(b.contractcode)) total from pbcrs_report_EnCtrctBsSgmt b left join
+		pbcrs_report_encreditlimsgmt c on b.ctrctbssgmtseqno=c.creditlimsgmtseqno
+		where b.etl_date = to_date(#{queryRptDate}, 'yyyy-mm-dd')
+		union all
+		select '有效授信额度' typeName, to_char(wm_concat(distinct mapping.sys_desc||':'||sum(creditlim))) total from pbcrs_report_EnCtrctBsSgmt b left join
+      pbcrs_report_encreditlimsgmt c on b.ctrctbssgmtseqno=c.creditlimsgmtseqno
+      left join (select *
+                         from pbcrs_report_code_mapping
+                        where Sourcesys = 'MIS'
+                          and Sourcefiled = 'CURRENCY') mapping
+              on Cy = mapping.SYS_CODE
+      where b.etl_date = to_date(#{queryRptDate}, 'yyyy-mm-dd')
+      group by mapping.sys_desc
+    
+  </select>
+  
+    <select id="getInfoManager" resultType="map" parameterType="map">
+		select '总客户数' typeName, tcunt total
+		   from(select count(1) tcunt
+		           from PBCRS_REPORT_BSSGMT
+		           where etl_date = to_date(#{queryRptDate}, 'yyyy-mm-dd')
+		       ) 
+		          
+		   union all
+     select '未结清客户数' typeName, uncunt total
+         from (select count(distinct sourcecustid) uncunt
+            from (select l1.sourcecustid||l2.sourcecustid||l3.sourcecustid sourcecustid
+                     from PBCRS_REPORT_ACCTBSSGMT b
+                     left join pbcrs_datapln_inloaninfo l1
+                        on b.acctcode ='D10025210H0005' || l1.acctcode and l1.datadate =to_date(#{queryRptDate}, 'yyyy-mm-dd')
+                     left join pbcrs_datasln_inloaninfo l2
+                           on b.acctcode ='D10025210H0005' || l2.acctcode and l2.datadate =to_date(#{queryRptDate}, 'yyyy-mm-dd')
+                      left join pbcrs_datailn_inloaninfo l3
+                          on b.acctcode ='D10025210H0005' || l3.acctcode and l3.datadate =to_date(#{queryRptDate}, 'yyyy-mm-dd')
+                     where b.etl_date =to_date(#{queryRptDate}, 'yyyy-mm-dd')  
+                           and b.RPTDATECODE !='20'  
+                  )                             
+          )aa
+  </select>
+  
+  
+  <select id="getPLN_infoManager" resultType="map" parameterType="map">
+		select '总客户数' typeName, tcunt total
+		  from  (select count(1) tcunt
+		                  from PBCRS_REPORT_BSSGMT
+		                 where etl_date = to_date(#{queryRptDate}, 'yyyy-mm-dd')
+		                   and sourcesys = 'PLN'
+		        )aa
+		union all
+		select '未结清客户数' typeName, uncunt total
+		  from (select count(distinct sourcecustid) uncunt
+		            from
+		                (select l.sourcecustid
+		                    from PBCRS_REPORT_ACCTBSSGMT b
+		                    left join pbcrs_datapln_inloaninfo l
+		                         on b.acctcode ='D10025210H0005' || l.acctcode
+		                    where b.etl_date =to_date(#{queryRptDate}, 'yyyy-mm-dd')
+		                          and l.datadate =to_date(#{queryRptDate}, 'yyyy-mm-dd')
+		                          AND b.sourcesys = 'PLN'
+		                          and b.rptdatecode !='20'
+		                 ) 
+		         ) aa
+  </select>
+  
+  <select id="getILN_infoManager" resultType="map" parameterType="map">
+		select '总客户数' typeName, tcunt total
+		  from  (select count(1) tcunt
+		                  from PBCRS_REPORT_BSSGMT
+		                 where etl_date = to_date(#{queryRptDate}, 'yyyy-mm-dd')
+		                   and sourcesys = 'ILN'
+		        )aa
+		union all
+		select '未结清客户数' typeName, uncunt total
+          from (select count(distinct sourcecustid) uncunt
+            from
+                (select l.sourcecustid
+                    from PBCRS_REPORT_ACCTBSSGMT b
+                    left join pbcrs_datailn_inloaninfo l
+                         on b.acctcode ='D10025210H0005' || l.acctcode
+                    where b.etl_date =to_date(#{queryRptDate}, 'yyyy-mm-dd')
+                          and l.datadate =to_date(#{queryRptDate}, 'yyyy-mm-dd')
+                          AND b.sourcesys = 'ILN'
+						  and b.rptdatecode !='20'
+				) 
+         ) aa
+  </select>
+  
+  <select id="getSLN_infoManager" resultType="map" parameterType="map">
+		select '总客户数' typeName, tcunt total
+		  from  (select count(1) tcunt
+		                  from PBCRS_REPORT_BSSGMT
+		                 where etl_date = to_date(#{queryRptDate}, 'yyyy-mm-dd')
+		                   and sourcesys = 'SLNIND'
+		        )aa
+		union all
+		select '未结清客户数' typeName, uncunt total
+          from (select count(distinct sourcecustid) uncunt
+            from
+                (select l.sourcecustid
+                    from PBCRS_REPORT_ACCTBSSGMT b
+                    left join pbcrs_datasln_inloaninfo l
+                         on b.acctcode ='D10025210H0005' || l.acctcode
+                    where b.etl_date =to_date(#{queryRptDate}, 'yyyy-mm-dd')
+                          and l.datadate =to_date(#{queryRptDate}, 'yyyy-mm-dd')
+                          AND b.sourcesys = 'SLNIND' 
+						  and b.rptdatecode !='20'
+				) 
+         ) aa
+  </select>
+  
+   <select id="getIndBaseAddCheck" resultType="map" parameterType="map">
+	select '新增客户数' typeName, atCount - lastCount total
+  from (select (select count(1)
+                  from PBCRS_REPORT_BSSGMT t
+                 where t.etl_date = to_date(#{queryRptDate}, 'yyyy-mm-dd')
+                   and t.rptdatecode = '10') atCount,
+               (select count(1)
+                  from PBCRS_REPORT_BSSGMT t
+                 where t.etl_date = to_date(#{preDate}, 'yyyy-mm-dd')
+                   and t.rptdatecode = '10') lastCount
+          from dual)
+ union all         
+select '变更客户数' typeName, atCount - lastCount total
+  from (select (select count(1)
+                  from PBCRS_REPORT_BSSGMT t
+                 where t.etl_date = to_date(#{queryRptDate}, 'yyyy-mm-dd')
+                   and t.rptdatecode = '20') atCount,
+               (select count(1)
+                  from PBCRS_REPORT_BSSGMT t
+                 where t.etl_date = to_date(#{preDate}, 'yyyy-mm-dd')
+                   and t.rptdatecode = '20') lastCount
+          from dual)
+  </select>
+  
+   <select id="getD1CheckResult1" resultType="map" parameterType="map">
+	  
+   select '未结清客户数' typeName, count(1) total from 
+           (select sourcecustid from 
+                 (select b.acctcode,
+                         l1.sourcecustid||l2.sourcecustid||l3.sourcecustid sourcecustid
+                     from PBCRS_REPORT_ACCTBSSGMT b
+                     left join pbcrs_datapln_inloaninfo  l1 on b.acctcode = 'D10025210H0005' ||
+                                                            l1.acctcode and l1.datadate = add_months(to_date(#{queryRptDate}, 'yyyy-mm-dd'),-2)
+                     left join pbcrs_datasln_inloaninfo  l2 on b.acctcode = 'D10025210H0005' ||
+                                                                    l2.acctcode and l2.datadate = add_months(to_date(#{queryRptDate}, 'yyyy-mm-dd'),-2)
+                     left join pbcrs_datailn_inloaninfo  l3 on b.acctcode = 'D10025210H0005' ||
+                                                                    l3.acctcode and l3.datadate = add_months(to_date(#{queryRptDate}, 'yyyy-mm-dd'),-2)                                                
+                     where b.etl_date = add_months(to_date(#{queryRptDate}, 'yyyy-mm-dd'),-2)
+                           and b.accttype='D1'
+                           and b.RPTDATECODE != '20'
+                  )summ group by sourcecustid
+          ) sumc
+          
+  union all     
+     
+  select '未结清账户笔数' typeName,count(1) total from 
+          (select b.acctcode
+              from PBCRS_REPORT_ACCTBSSGMT b
+              where b.etl_date = add_months(to_date(#{queryRptDate}, 'yyyy-mm-dd'),-2)
+                    and b.accttype='D1'
+                    and b.RPTDATECODE != '20'
+          )summ 
+          
+   union all       
+  select '未结清账户余额' typeName,nvl(sum(acctbal1),0)+nvl(sum(acctbal2),0)+nvl(sum(acctbal3),0) total from
+        (select b.acctcode,
+                l1.acctbal acctbal1,
+                l2.acctbal acctbal2,
+                l3.acctbal acctbal3
+            from PBCRS_REPORT_ACCTBSSGMT b
+            left join pbcrs_datapln_inloaninfo  l1 on b.acctcode = 'D10025210H0005' ||
+                                                            l1.acctcode and l1.datadate = add_months(to_date(#{queryRptDate}, 'yyyy-mm-dd'),-2)
+                     left join pbcrs_datasln_inloaninfo  l2 on b.acctcode = 'D10025210H0005' ||
+                                                                    l2.acctcode and l2.datadate = add_months(to_date(#{queryRptDate}, 'yyyy-mm-dd'),-2)
+                     left join pbcrs_datailn_inloaninfo  l3 on b.acctcode = 'D10025210H0005' ||
+                                                                    l3.acctcode and l3.datadate = add_months(to_date(#{queryRptDate}, 'yyyy-mm-dd'),-2)
+            where b.etl_date = add_months(to_date(#{queryRptDate}, 'yyyy-mm-dd'),-2)
+                  and b.accttype='D1'
+                  and b.RPTDATECODE != '20'
+         ) summ 
+         
+  </select>
+  
+   <select id="getD1CheckResult2" resultType="map" parameterType="map">
+	  
+     
+     
+  select '未结清客户数' typeName, count(1) total from 
+           (select sourcecustid from 
+                 (select b.acctcode,
+                         l1.sourcecustid||l2.sourcecustid||l3.sourcecustid sourcecustid
+                     from PBCRS_REPORT_ACCTBSSGMT b
+                     left join pbcrs_datapln_inloaninfo  l1 on b.acctcode = 'D10025210H0005' ||
+                                                            l1.acctcode and l1.datadate = add_months(to_date(#{queryRptDate}, 'yyyy-mm-dd'),-1)
+                     left join pbcrs_datasln_inloaninfo  l2 on b.acctcode = 'D10025210H0005' ||
+                                                                    l2.acctcode and l2.datadate = add_months(to_date(#{queryRptDate}, 'yyyy-mm-dd'),-1)
+                     left join pbcrs_datailn_inloaninfo  l3 on b.acctcode = 'D10025210H0005' ||
+                                                                    l3.acctcode and l3.datadate = add_months(to_date(#{queryRptDate}, 'yyyy-mm-dd'),-1)                                           
+                     where b.etl_date = add_months(to_date(#{queryRptDate}, 'yyyy-mm-dd'),-1)
+                           and b.accttype='D1'
+                           and b.RPTDATECODE != '20'
+                  )summ group by sourcecustid
+          ) sumc
+          
+  union all     
+     
+  select '未结清账户笔数' typeName,count(1) total from 
+          (select b.acctcode
+              from PBCRS_REPORT_ACCTBSSGMT b
+              where b.etl_date = add_months(to_date(#{queryRptDate}, 'yyyy-mm-dd'),-1)
+                    and b.accttype='D1'
+                    and b.RPTDATECODE != '20'
+          )summ 
+          
+   union all       
+  select '未结清账户余额' typeName,nvl(sum(acctbal1),0)+nvl(sum(acctbal2),0)+nvl(sum(acctbal3),0) total from
+        (select b.acctcode,
+                l1.acctbal acctbal1,
+                l2.acctbal acctbal2,
+                l3.acctbal acctbal3
+            from PBCRS_REPORT_ACCTBSSGMT b
+            left join pbcrs_datapln_inloaninfo  l1 on b.acctcode = 'D10025210H0005' ||
+                                                            l1.acctcode and l1.datadate = add_months(to_date(#{queryRptDate}, 'yyyy-mm-dd'),-1)
+                     left join pbcrs_datasln_inloaninfo  l2 on b.acctcode = 'D10025210H0005' ||
+                                                                    l2.acctcode and l2.datadate = add_months(to_date(#{queryRptDate}, 'yyyy-mm-dd'),-1)
+                     left join pbcrs_datailn_inloaninfo  l3 on b.acctcode = 'D10025210H0005' ||
+                                                                    l3.acctcode and l3.datadate = add_months(to_date(#{queryRptDate}, 'yyyy-mm-dd'),-1)
+            where b.etl_date = add_months(to_date(#{queryRptDate}, 'yyyy-mm-dd'),-1)
+                  and b.accttype='D1'
+                  and b.RPTDATECODE != '20'
+         ) summ 
+          
+   
+ 
+  </select>
+  
+   <select id="getD1CheckResult3" resultType="map" parameterType="map">
+	  
+  select '未结清客户数' typeName, count(1) total from 
+           (select sourcecustid from 
+                 (select b.acctcode,
+                         l1.sourcecustid||l2.sourcecustid||l3.sourcecustid sourcecustid
+                     from PBCRS_REPORT_ACCTBSSGMT b
+                     left join pbcrs_datapln_inloaninfo  l1 on b.acctcode = 'D10025210H0005' ||
+                                                            l1.acctcode and l1.datadate = to_date(#{queryRptDate}, 'yyyy-mm-dd')
+                     left join pbcrs_datasln_inloaninfo  l2 on b.acctcode = 'D10025210H0005' ||
+                                                                    l2.acctcode and l2.datadate = to_date(#{queryRptDate}, 'yyyy-mm-dd')
+                     left join pbcrs_datailn_inloaninfo  l3 on b.acctcode = 'D10025210H0005' ||
+                                                                    l3.acctcode and l3.datadate = to_date(#{queryRptDate}, 'yyyy-mm-dd')                                                 
+                     where b.etl_date = to_date(#{queryRptDate}, 'yyyy-mm-dd')
+                           and b.accttype='D1'
+                           and b.RPTDATECODE != '20'
+                  )summ group by sourcecustid
+          ) sumc
+          
+  union all     
+     
+  select '未结清账户笔数' typeName,count(1) total from 
+          (select b.acctcode
+              from PBCRS_REPORT_ACCTBSSGMT b
+              where b.etl_date = to_date(#{queryRptDate}, 'yyyy-mm-dd')
+                    and b.accttype='D1'
+                    and b.RPTDATECODE != '20'
+          )summ 
+          
+   union all       
+  select '未结清账户余额' typeName,nvl(sum(acctbal1),0)+nvl(sum(acctbal2),0)+nvl(sum(acctbal3),0) total from
+        (select b.acctcode,
+                l1.acctbal acctbal1,
+                l2.acctbal acctbal2,
+                l3.acctbal acctbal3
+            from PBCRS_REPORT_ACCTBSSGMT b
+            left join pbcrs_datapln_inloaninfo  l1 on b.acctcode = 'D10025210H0005' ||
+                                                            l1.acctcode and l1.datadate = to_date(#{queryRptDate}, 'yyyy-mm-dd')
+                     left join pbcrs_datasln_inloaninfo  l2 on b.acctcode = 'D10025210H0005' ||
+                                                                    l2.acctcode and l2.datadate = to_date(#{queryRptDate}, 'yyyy-mm-dd')
+                     left join pbcrs_datailn_inloaninfo  l3 on b.acctcode = 'D10025210H0005' ||
+                                                                    l3.acctcode and l3.datadate = to_date(#{queryRptDate}, 'yyyy-mm-dd') 
+            where b.etl_date = to_date(#{queryRptDate}, 'yyyy-mm-dd')
+                  and b.accttype='D1'
+                  and b.RPTDATECODE != '20'
+         ) summ 
+ 
+  </select>
+  
+  <select id="getR4CheckResult1" resultType="map" parameterType="map">
+	  select '未结清客户数' typeName, count(1) total from 
+           (select sourcecustid from 
+                 (select b.acctcode,
+                         l1.sourcecustid||l2.sourcecustid||l3.sourcecustid sourcecustid
+                     from PBCRS_REPORT_ACCTBSSGMT b
+                     left join pbcrs_datapln_inloaninfo  l1 on b.acctcode = 'D10025210H0005' ||
+                                                            l1.acctcode and l1.datadate = add_months(to_date(#{queryRptDate}, 'yyyy-mm-dd'),-2)
+                     left join pbcrs_datasln_inloaninfo  l2 on b.acctcode = 'D10025210H0005' ||
+                                                                    l2.acctcode and l2.datadate = add_months(to_date(#{queryRptDate}, 'yyyy-mm-dd'),-2)
+                     left join pbcrs_datailn_inloaninfo  l3 on b.acctcode = 'D10025210H0005' ||
+                                                                    l3.acctcode and l3.datadate = add_months(to_date(#{queryRptDate}, 'yyyy-mm-dd'),-2)                                                
+                     where b.etl_date = to_date(#{queryRptDate}, 'yyyy-mm-dd')
+                           and b.accttype='R4'
+                           and b.RPTDATECODE != '20'
+                  )summ group by sourcecustid
+          ) sumc
+          
+  union all     
+     
+  select '未结清账户笔数' typeName,count(1) total from 
+          (select b.acctcode
+              from PBCRS_REPORT_ACCTBSSGMT b
+              where b.etl_date = add_months(to_date(#{queryRptDate}, 'yyyy-mm-dd'),-2)
+                    and b.accttype='R4'
+                    and b.RPTDATECODE != '20'
+          )summ 
+          
+   union all       
+  select '未结清账户余额' typeName,nvl(sum(acctbal1),0)+nvl(sum(acctbal2),0)+nvl(sum(acctbal3),0) total from
+        (select b.acctcode,
+                l1.acctbal acctbal1,
+                l2.acctbal acctbal2,
+                l3.acctbal acctbal3
+            from PBCRS_REPORT_ACCTBSSGMT b
+            left join pbcrs_datapln_inloaninfo  l1 on b.acctcode = 'D10025210H0005' ||
+                                                            l1.acctcode and l1.datadate = add_months(to_date(#{queryRptDate}, 'yyyy-mm-dd'),-2)
+                     left join pbcrs_datasln_inloaninfo  l2 on b.acctcode = 'D10025210H0005' ||
+                                                                    l2.acctcode and l2.datadate = add_months(to_date(#{queryRptDate}, 'yyyy-mm-dd'),-2)
+                     left join pbcrs_datailn_inloaninfo  l3 on b.acctcode = 'D10025210H0005' ||
+                                                                    l3.acctcode and l3.datadate = add_months(to_date(#{queryRptDate}, 'yyyy-mm-dd'),-2)
+            where b.etl_date = to_date(#{queryRptDate}, 'yyyy-mm-dd')
+                  and b.accttype='R4'
+                  and b.RPTDATECODE != '20'
+         ) summ 
+  </select>
+  
+  <select id="getR4CheckResult2" resultType="map" parameterType="map">
+	  select '未结清客户数' typeName, count(1) total from 
+           (select sourcecustid from 
+                 (select b.acctcode,
+                         l1.sourcecustid||l2.sourcecustid||l3.sourcecustid sourcecustid
+                     from PBCRS_REPORT_ACCTBSSGMT b
+                     left join pbcrs_datapln_inloaninfo  l1 on b.acctcode = 'D10025210H0005' ||
+                                                            l1.acctcode and l1.datadate = add_months(to_date(#{queryRptDate}, 'yyyy-mm-dd'),-1)
+                     left join pbcrs_datasln_inloaninfo  l2 on b.acctcode = 'D10025210H0005' ||
+                                                                    l2.acctcode and l2.datadate = add_months(to_date(#{queryRptDate}, 'yyyy-mm-dd'),-1)
+                     left join pbcrs_datailn_inloaninfo  l3 on b.acctcode = 'D10025210H0005' ||
+                                                                    l3.acctcode and l3.datadate = add_months(to_date(#{queryRptDate}, 'yyyy-mm-dd'),-1)                                            
+                     where b.etl_date = add_months(to_date(#{queryRptDate}, 'yyyy-mm-dd'),-1)
+                           and b.accttype='R4'
+                           and b.RPTDATECODE != '20'
+                  )summ group by sourcecustid
+          ) sumc
+          
+  union all     
+     
+  select '未结清账户笔数' typeName,count(1) total from 
+          (select b.acctcode
+              from PBCRS_REPORT_ACCTBSSGMT b
+              where b.etl_date = add_months(to_date(#{queryRptDate}, 'yyyy-mm-dd'),-1)
+                    and b.accttype='R4'
+                    and b.RPTDATECODE != '20'
+          )summ 
+          
+   union all       
+  select '未结清账户余额' typeName,nvl(sum(acctbal1),0)+nvl(sum(acctbal2),0)+nvl(sum(acctbal3),0) total from
+        (select b.acctcode,
+                l1.acctbal acctbal1,
+                l2.acctbal acctbal2,
+                l3.acctbal acctbal3
+            from PBCRS_REPORT_ACCTBSSGMT b
+            left join pbcrs_datapln_inloaninfo  l1 on b.acctcode = 'D10025210H0005' ||
+                                                            l1.acctcode and l1.datadate = add_months(to_date(#{queryRptDate}, 'yyyy-mm-dd'),-1)
+                     left join pbcrs_datasln_inloaninfo  l2 on b.acctcode = 'D10025210H0005' ||
+                                                                    l2.acctcode and l2.datadate = add_months(to_date(#{queryRptDate}, 'yyyy-mm-dd'),-1)
+                     left join pbcrs_datailn_inloaninfo  l3 on b.acctcode = 'D10025210H0005' ||
+                                                                    l3.acctcode and l3.datadate = add_months(to_date(#{queryRptDate}, 'yyyy-mm-dd'),-1)
+            where b.etl_date = add_months(to_date(#{queryRptDate}, 'yyyy-mm-dd'),-1)
+                  and b.accttype='R4'
+                  and b.RPTDATECODE != '20'
+         ) summ 
+  </select>
+  
+  <select id="getR4CheckResult3" resultType="map" parameterType="map">
+	  select '未结清客户数' typeName, count(1) total from 
+           (select sourcecustid from 
+                 (select b.acctcode,
+                         l1.sourcecustid||l2.sourcecustid||l3.sourcecustid sourcecustid
+                     from PBCRS_REPORT_ACCTBSSGMT b
+                     left join pbcrs_datapln_inloaninfo  l1 on b.acctcode = 'D10025210H0005' ||
+                                                            l1.acctcode and l1.datadate = to_date(#{queryRptDate}, 'yyyy-mm-dd')
+                     left join pbcrs_datasln_inloaninfo  l2 on b.acctcode = 'D10025210H0005' ||
+                                                                    l2.acctcode and l2.datadate = to_date(#{queryRptDate}, 'yyyy-mm-dd')
+                     left join pbcrs_datailn_inloaninfo  l3 on b.acctcode = 'D10025210H0005' ||
+                                                                    l3.acctcode and l3.datadate = to_date(#{queryRptDate}, 'yyyy-mm-dd')                                                 
+                     where b.etl_date = to_date(#{queryRptDate}, 'yyyy-mm-dd')
+                           and b.accttype='R4'
+                           and b.RPTDATECODE != '20'
+                  )summ group by sourcecustid
+          ) sumc
+          
+  union all     
+     
+  select '未结清账户笔数' typeName,count(1) total from 
+          (select b.acctcode
+              from PBCRS_REPORT_ACCTBSSGMT b
+              where b.etl_date = to_date(#{queryRptDate}, 'yyyy-mm-dd')
+                    and b.accttype='R4'
+                    and b.RPTDATECODE != '20'
+          )summ 
+          
+   union all       
+  select '未结清账户余额' typeName,nvl(sum(acctbal1),0)+nvl(sum(acctbal2),0)+nvl(sum(acctbal3),0) total from
+        (select b.acctcode,
+                l1.acctbal acctbal1,
+                l2.acctbal acctbal2,
+                l3.acctbal acctbal3
+            from PBCRS_REPORT_ACCTBSSGMT b
+            left join pbcrs_datapln_inloaninfo  l1 on b.acctcode = 'D10025210H0005' ||
+                                                            l1.acctcode and l1.datadate = to_date(#{queryRptDate}, 'yyyy-mm-dd')
+                     left join pbcrs_datasln_inloaninfo  l2 on b.acctcode = 'D10025210H0005' ||
+                                                                    l2.acctcode and l2.datadate = to_date(#{queryRptDate}, 'yyyy-mm-dd')
+                     left join pbcrs_datailn_inloaninfo  l3 on b.acctcode = 'D10025210H0005' ||
+                                                                    l3.acctcode and l3.datadate = to_date(#{queryRptDate}, 'yyyy-mm-dd') 
+            where b.etl_date = to_date(#{queryRptDate}, 'yyyy-mm-dd')
+                  and b.accttype='R4'
+                  and b.RPTDATECODE != '20'
+         ) summ 
+  </select>
+  
+  <select id="getIndCtrCheckResult" resultType="map" parameterType="map">
+	select '有效授信协议数' typeName, count(b.contractcode) total
+  from PBCRS_REPORT_CTRCTBSSGMT b
+  left join PBCRS_REPORT_CREDITLIMSGMT c
+    on b.ctrctbssgmtseqno = c.creditlimsgmtseqno
+ where b.etl_date = to_date(#{queryRptDate}, 'yyyy-mm-dd')
+       and b.RPTDATECODE !='20'
+union all
+select '有效授信额度' typeName, sum(c.creditlim) total
+  from PBCRS_REPORT_CTRCTBSSGMT b
+  left join PBCRS_REPORT_CREDITLIMSGMT c
+    on b.ctrctbssgmtseqno = c.creditlimsgmtseqno
+ where b.etl_date = to_date(#{queryRptDate}, 'yyyy-mm-dd')
+       and b.RPTDATECODE !='20'
+  </select>
+  
+  <select id="getModCheckResult" resultType="map" parameterType="map">
+	
+		select '有效抵押合同数' typeName, count(1) total
+		  from pbcrs_report_MotCltBsInfSgmt m
+		  inner join PBCRS_REPORT_MOTCLTCTRBSSGMT b on m.motgacltalbsinfsgmtseqno = b.motgacltalctrctbssgmtseqno
+		 where m.etl_date = to_date(#{queryRptDate}, 'yyyy-mm-dd')
+		   and b.etl_date = to_date(#{queryRptDate}, 'yyyy-mm-dd')
+		   and m.guartype = '1'
+		   and m.sourcesys in ('PLN', 'ILN', 'SLNIND')
+		   and b.rptdatecode != '20'
+		union all
+		select '有效抵押担保金额' typeName, sum(m.ccamt) total
+		  from pbcrs_report_MotCltBsInfSgmt m
+		  inner join PBCRS_REPORT_MOTCLTCTRBSSGMT b on m.motgacltalbsinfsgmtseqno = b.motgacltalctrctbssgmtseqno
+		 where m.etl_date = to_date(#{queryRptDate}, 'yyyy-mm-dd')
+		   and b.etl_date = to_date(#{queryRptDate}, 'yyyy-mm-dd')
+		   and m.guartype = '1'
+		   and m.sourcesys in ('PLN', 'ILN', 'SLNIND')
+		   and b.rptdatecode != '20'
+		union all
+		select '有效质押合同数' typeName, count(1) total
+		  from pbcrs_report_MotCltBsInfSgmt m
+		  inner join PBCRS_REPORT_MOTCLTCTRBSSGMT b on m.motgacltalbsinfsgmtseqno = b.motgacltalctrctbssgmtseqno
+		 where m.etl_date = to_date(#{queryRptDate}, 'yyyy-mm-dd')
+		   and b.etl_date = to_date(#{queryRptDate}, 'yyyy-mm-dd')
+		   and m.guartype = '2'
+		   and m.sourcesys in ('PLN', 'ILN', 'SLNIND')
+		   and b.rptdatecode != '20'
+		union all
+		select '有效质押担保金额' typeName, nvl(sum(m.ccamt),0) total
+		  from pbcrs_report_MotCltBsInfSgmt m
+		  inner join PBCRS_REPORT_MOTCLTCTRBSSGMT b on m.motgacltalbsinfsgmtseqno = b.motgacltalctrctbssgmtseqno
+		 where m.etl_date = to_date(#{queryRptDate}, 'yyyy-mm-dd')
+		   and b.etl_date = to_date(#{queryRptDate}, 'yyyy-mm-dd')
+		   and m.guartype = '2'
+		   and m.sourcesys in ('PLN', 'ILN', 'SLNIND')
+		   and b.rptdatecode != '20'
+  </select>
+  
+   <select id="getBaseInfoJoinCheckResult" resultType="map" parameterType="map">
+	select '个人基本信息' typename,accCount,
+       bsCount,
+       to_char(round(accCount *  decode(bsCount,0,0,1/bsCount), 4) * 100, '990.99') || '%' Keep
+   from (select (select count(t.name || t.idtype || t.idnum)
+                  from PBCRS_REPORT_BSSGMT t
+                 where etl_date = to_date(#{queryRptDate}, 'yyyy-mm-dd')) bsCount,
+               (select count(distinct NAME || IDTYPE || IDNUM)
+                  from PBCRS_REPORT_ACCTBSSGMT t
+                 where etl_date = to_date(#{queryRptDate}, 'yyyy-mm-dd')) accCount
+          from dual)
+  </select>
+  
+  <select id="getCtrInfoJoinCheckResult" resultType="map" parameterType="map">
+	select '个人授信协议信息' typename,accCount,
+       clCount,
+       to_char(round(accCount *  decode(clCount,0,0,1/clCount), 4) * 100, '990.99') || '%' Keep
+  from (select (select count(t.name || t.idtype || t.idnum)
+                  from PBCRS_REPORT_CTRCTBSSGMT t
+                 where etl_date = to_date(#{queryRptDate}, 'yyyy-mm-dd')) clCount,
+               (select count(MCC)
+                  from PBCRS_REPORT_ACCTCREDSGMT t
+                 where etl_date = to_date(#{queryRptDate}, 'yyyy-mm-dd')) accCount
+          from dual)
+  </select>
+  
+    <select id="getModInfoJoinCheckResult" resultType="map" parameterType="map">
+	select '抵（质）押物信息' typename,accCount,
+       dzyCount,
+       to_char(round(accCount *  decode(dzyCount,0,0,1/dzyCount), 4) * 100, '990.99') || '%' Keep
+  from (select (select count(CCCODE)
+                  from PBCRS_REPORT_MOTCLTCTRBSSGMT t
+                 where etl_date = to_date(#{queryRptDate}, 'yyyy-mm-dd')
+                   and sourcesys in ('PLN', 'ILN', 'SLNIND')) dzyCount,
+               (select count(CCC)
+                  from PBCRS_REPORT_CCCINF t
+                 where etl_date = to_date(#{queryRptDate}, 'yyyy-mm-dd')
+                   and sourcesys in ('PLN', 'ILN', 'SLNIND')) accCount
+          from dual)
+  </select>
+  
+  
+</mapper>

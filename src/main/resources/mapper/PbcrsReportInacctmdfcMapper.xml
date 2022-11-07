@@ -1,0 +1,42 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.hkbank.pbcrs.mapper.PbcrsReportInacctmdfcMapper">
+	
+	<resultMap id="BaseResultMap" type="com.hkbank.pbcrs.model.PbcrsReportInacctmdfc">
+
+		<id column="INACCTMDFCSEQNO" jdbcType="VARCHAR" property="InAcctMdfcSeqNo" />
+		 <id column="MDFCSGMTCODE" jdbcType="VARCHAR" property="MdfcSgmtCode" />
+		
+		<association property="InAcctMdfcBsSgmt"
+			javaType="com.hkbank.pbcrs.model.PbcrsReportInacctmdfcbssgmt">
+			<id column="BSSGMTSEQNO" jdbcType="VARCHAR" property="BsSgmtSeqNo" />
+			<id column="MDFCSGMTCODE" jdbcType="VARCHAR" property="MdfcSgmtCode" />
+			<result column="INFRECTYPE" jdbcType="VARCHAR" property="InfRecType" />
+			<result column="MODRECCODE" jdbcType="VARCHAR" property="ModRecCode" />
+			<result column="RPTDATE" jdbcType="VARCHAR" property="RptDate" />
+			<result column="ACCTTYPE" jdbcType="VARCHAR" property="AcctType" />
+			<result column="REPORTFLAG" jdbcType="VARCHAR" property="reportflag" />
+		</association>
+		
+	</resultMap>
+	<select id="selectByMap" parameterType="map" resultMap="BaseResultMap">
+				select 
+			BsSgmtSeqNo INACCTMDFCSEQNO,
+			BsSgmtSeqNo,
+			InfRecType,
+			ModRecCode,
+			RptDate,
+			AcctType,
+			MdfcSgmtCode 
+			from pbcrs_report_InAcctMdfcBsSgmt b
+			where b.reportflag='0'
+			<!-- and b.etl_date=#{etl_Date} -->
+		<if test="sysid != null and sysid != ''">
+			and b.sourcesys=#{sysid}
+		</if>
+	</select>
+	<update id="updateByMap" parameterType="map">
+		update PBCRS_REPORT_INACCTMDFCBSSGMT set reportflag='1' where reportflag='0'
+	</update>
+
+</mapper>

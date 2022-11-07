@@ -1,0 +1,571 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+
+<mapper namespace="Users">
+
+
+	<select id="getValidTimeConfig" parameterType="map" resultType="map">
+	select * from PBCRS_sys_code where sys_code_type='IDCODE_TIME_CONF'
+	</select>
+
+	<select id="findAllUser" parameterType="map" resultType="map">
+		SELECT
+		u.userid AS "userid",u.username AS "username",c.sys_code_desc AS
+		"sex",o.sys_org_name AS "orgname",
+		u.deptname AS "deptname",c1.sys_code_desc
+		AS "status"
+		FROM PBCRS_sys_user u
+		LEFT JOIN PBCRS_sys_org o
+		ON o.sys_org_id =
+		u.orgid
+		LEFT JOIN PBCRS_sys_code c
+		ON c.sys_code = u.sex and
+		c.sys_code_type = 'SEX'
+		LEFT JOIN PBCRS_sys_code c1
+		ON c1.sys_code =
+		u.status and c1.sys_code_type = 'USER-STATUS'
+		WHERE U.ROWID IN (
+		SELECT rid FROM (
+		SELECT rid, @ROWNUM:=@ROWNUM+1 AS rn
+		FROM (
+		SELECT ROWID rid FROM PBCRS_sys_user
+		where 1=1
+		<if test="userId != null and userId != ''">
+			and userid = #{userId}
+		</if>
+		<if test="userName != null and userName != ''">
+			and username like '%${userName}%'
+		</if>
+		<if test="orgId != null and orgId != ''">
+			and orgid = #{orgId}
+		</if>
+		<if test="status != null and status != ''">
+			and status = #{status}
+		</if>
+		ORDER BY userid
+		) t1
+		WHERE @ROWNUM:=@ROWNUM+1 &lt;= #{maxNum}
+		) t2
+		WHERE rn &gt;= #{minNum}
+		) ORDER BY userid
+	</select>
+
+	<select id="findAllUserForPage" parameterType="map" resultType="map">
+		SELECT
+		u.userid AS "userid",u.username AS "username",c.sys_code_desc AS
+		"sex",o1.sys_org_name AS "orgname",o.sys_org_name AS "authorgname",
+		u.deptname AS "deptname",c1.sys_code_desc AS "status",
+		to_char(u.USER_STAT_CHG_TIME, 'yyyy-mm-dd HH24:MI:SS') as "USER_STAT_CHG_TIME"
+		FROM PBCRS_sys_user u
+		LEFT JOIN PBCRS_sys_org o
+		ON o.sys_org_id = u.authorgid
+		LEFT JOIN
+		PBCRS_sys_org o1
+		ON o1.sys_org_id = u.orgid
+		LEFT JOIN PBCRS_sys_code c
+		ON
+		c.sys_code = u.sex and c.sys_code_type = 'SEX'
+		LEFT JOIN PBCRS_sys_code
+		c1
+		ON c1.sys_code = u.status and c1.sys_code_type = 'USER-STATUS'
+		<if test="queryRoleId != null and queryRoleId != ''">
+			inner join PBCRS_sys_user_role user_role
+			on user_role.userid = u.userid
+			and user_role.roleid = #{queryRoleId}
+		</if>
+		where 1=1
+		
+		<if test="userId != null and userId != ''">
+			and u.userid = #{userId}
+		</if>
+		<if test="userName != null and userName != ''">
+			and u.username like '%${userName}%'
+		</if>
+		<if test="orgId != null and orgId != ''">
+			and u.orgid in (select o2.sys_org_id from PBCRS_sys_org o2 where
+			o2.org_index like '%${orgId}%')
+		</if>
+		<if test="authOrgId != null and authOrgId != ''">
+			and u.authorgid in (select o2.sys_org_id from PBCRS_sys_org o2 where
+			o2.org_index like '%${authOrgId}%')
+		</if>
+		<if test="status != null and status != ''">
+			and u.status = #{status}
+		</if>
+		ORDER BY u.userid
+
+	</select>
+	
+	
+	<select id="findAllUserForPagePower" parameterType="map" resultType="map">
+		SELECT
+		u.userid AS userid,u.username AS username,c.sys_code_desc AS
+		sex,o1.sys_org_name AS orgname,o.sys_org_name AS authorgname,
+		u.deptname AS deptname,c1.sys_code_desc AS status,
+		to_char(u.USER_STAT_CHG_TIME,'%Y-%m-%d %H:%i:%s') as USER_STAT_CHG_TIME
+		FROM PBCRS_sys_user u
+		LEFT JOIN PBCRS_sys_org o
+		ON o.sys_org_id = u.authorgid
+		left join PBCRS_sys_user_role ur 
+		on u.userid=ur.userid
+		left join PBCRS_sys_role_info r
+		on ur.roleid=r.roleid
+		LEFT JOIN
+		PBCRS_sys_org o1
+		ON o1.sys_org_id = u.orgid
+		LEFT JOIN PBCRS_sys_code c
+		ON
+		c.sys_code = u.sex and c.sys_code_type = 'SEX'
+		LEFT JOIN PBCRS_sys_code
+		c1
+		ON c1.sys_code = u.status and c1.sys_code_type = 'USER-STATUS'
+		<if test="queryRoleId != null and queryRoleId != ''">
+			inner join PBCRS_sys_user_role user_role
+			on user_role.userid = u.userid
+			and user_role.roleid = #{queryRoleId}
+		</if>
+		where 1=1
+		<if test="userId != null and userId != ''">
+			and u.userid like '%${userId}%'
+		</if>
+		<if test="userName != null and userName != ''">
+			and u.username like '%${userName}%'
+		</if>
+		and u.userid in (
+		select USERID from PBCRS_sys_user_role where ROLEID in (
+		select ROLEID from PBCRS_sys_role_power where POWERID=#{queryFuncId}
+		))
+		and u.userid !=#{loginUserId}
+	
+		ORDER BY r.role_order,u.userid
+
+	</select>
+	
+	<select id="getAllUserCountsPower" resultType="int" parameterType="map">
+		SELECT
+		count(*)
+		FROM PBCRS_sys_user u
+		LEFT JOIN PBCRS_sys_org o
+		ON
+		o.sys_org_id = u.authorgid
+		LEFT JOIN PBCRS_sys_org o1
+		ON o1.sys_org_id =
+		u.orgid
+		LEFT JOIN PBCRS_sys_code c
+		ON c.sys_code = u.sex and
+		c.sys_code_type = 'SEX'
+		LEFT JOIN PBCRS_sys_code c1
+		ON c1.sys_code =
+		u.status and c1.sys_code_type = 'USER-STATUS'
+		where 1=1
+		<if test="userId != null and userId != ''">
+			and u.userid like '%${userId}%'
+		</if>
+		<if test="userName != null and userName != ''">
+			and u.username like '%${userName}%'
+		</if>
+		and u.userid in (
+		select USERID from PBCRS_sys_user_role where ROLEID in (
+		select ROLEID from PBCRS_sys_role_power where POWERID=#{queryFuncId}
+		))
+		and u.userid !=#{loginUserId}
+	</select>
+
+
+	<select id="getAllUserCounts" resultType="int" parameterType="map">
+		SELECT
+		count(*)
+		FROM PBCRS_sys_user u
+		LEFT JOIN PBCRS_sys_org o
+		ON
+		o.sys_org_id = u.authorgid
+		LEFT JOIN PBCRS_sys_org o1
+		ON o1.sys_org_id =
+		u.orgid
+		LEFT JOIN PBCRS_sys_code c
+		ON c.sys_code = u.sex and
+		c.sys_code_type = 'SEX'
+		LEFT JOIN PBCRS_sys_code c1
+		ON c1.sys_code =
+		u.status and c1.sys_code_type = 'USER-STATUS'
+		<if test="queryRoleId != null and queryRoleId != ''">
+			inner join PBCRS_sys_user_role user_role
+			on user_role.userid = u.userid
+			and user_role.roleid = #{queryRoleId}
+		</if>
+		where 1=1
+		
+		<if test="userId != null and userId != ''">
+			and u.userid = #{userId}
+		</if>
+		<if test="userName != null and userName != ''">
+			and u.username like '%${userName}%'
+		</if>
+		<if test="orgId != null and orgId != ''">
+			and u.orgid in (select o2.sys_org_id from PBCRS_sys_org o2 where
+			o2.org_index like '%${orgId}%')
+		</if>
+		<if test="authOrgId != null and authOrgId != ''">
+			and u.authorgid in (select o2.sys_org_id from PBCRS_sys_org o2 where
+			o2.org_index like '%${authOrgId}%')
+		</if>
+		<if test="status != null and status != ''">
+			and u.status = #{status}
+		</if>
+	</select>
+
+	<select id="getUserCountsById" resultType="int" parameterType="map">
+		SELECT
+		count(*)
+		FROM
+		PBCRS_sys_user
+		where 1=1
+		and userid = #{userid}
+	</select>
+
+	<select id="getUserInfoById" resultType="map" parameterType="map">
+		SELECT
+		USERID as "userid",USERNAME as "username",SEX as "sex",ORGID as
+		"orgid",TEL as "tel",
+		ADDRESS as "address",DEPTNAME as
+		"deptname",STATION as "station",EMAIL as "email",
+		POSTCODE as
+		"postcode",STATUS as "status",DESCRIPTION as "description", AUTHORGID
+		as "authorgid"
+		FROM
+		PBCRS_sys_user
+		where 1=1
+		and userid = #{userid}
+	</select>
+
+
+	<select id="obtainSEQ_PBCRS_SYS_LOGGING" parameterType="map"
+		resultType="map">
+		select PBCRS_SYS_LOGGING_LOGID.Nextval from dual
+	</select>
+	<insert id="insertLoginLog" parameterType="map">
+		 insert into
+		PBCRS_SYS_LOGGING 
+		
+		(LOG_ID,
+		USER_ID,
+		SESSION_ID,
+		SERVER_ID,
+		OPER_TIME,
+		OPER_STATUS,
+		FUNC_ID,
+		CLIENT_IP)
+		VALUES
+		(#{LOG_ID},
+		#{USER_ID} ,
+		#{SESSION_ID} ,
+		#{SERVER_ID} ,
+		to_date(#{OPER_TIME},'yyyy/mm/dd'),
+		#{OPER_STATUS} ,
+		#{FUNC_ID} ,
+		#{CLIENT_IP} )
+	</insert>
+	<!-- <update id="updateLoginInfo" parameterType="com.hkbank.pbcrs.domain.User">
+		UPDATE PBCRS_sys_user SET credits=#{credits} WHERE userid =#{userId} </update> -->
+	<select id="getUserCount" parameterType="Map" resultType="int">
+		SELECT
+		count(*)
+		FROM PBCRS_sys_user_password
+		WHERE userid = #{USERID}
+		and
+		password=#{PASSWORD}
+	</select>
+	<select id="findUserByUserID" parameterType="map"
+		resultType="com.hkbank.pbcrs.domain.User">
+		SELECT
+		u.USERID as "userId",
+		u.USERNAME as "userName",
+		u.ORGID as "orgId",
+		org.sys_org_name as "orgName",
+		u.AUTHORGID as "authOrgId",
+		authorg.sys_org_name as "authOrgName",
+		olev.sys_org_id as "orgLev",
+		u.VALID_CODE as "valid_code",
+		u.VALID_CODE_TIME as "valid_code_time",
+		u.VALID_CODE_STAT as "valid_code_stat",
+		u.tel as "tel"
+		FROM
+		PBCRS_sys_user u
+		left join PBCRS_SYS_ORG_LEV olev
+		on olev.sys_org_id = u.AUTHORGID
+		left join PBCRS_sys_org org
+		on org.sys_org_id = u.orgid
+		left join PBCRS_sys_org authorg
+		on authorg.sys_org_id = u.authorgid
+		WHERE
+		USERID = #{USERID}
+	</select>
+
+	<insert id="createUser" parameterType="Map">
+		INSERT INTO
+		PBCRS_SYS_USER
+		(USERID,USERNAME,SEX,ORGID,TEL,ADDRESS,
+		DEPTNAME,STATION,EMAIL,POSTCODE,STATUS,DESCRIPTION,AUTHORGID)
+		VALUES
+		(#{userid},#{username},#{sex},#{orgid},#{tel},#{address},
+		#{deptname},#{station},#{email},#{postcode},#{status},#{description},#{authorgid})
+	</insert>
+	<insert id="createUserLog" parameterType="Map">
+		INSERT INTO
+		PBCRS_SYS_USER_LOG
+		(SERIALNO,USERID,USERNAME,SEX,ORGID,TEL,ADDRESS,
+		DEPTNAME,STATION,EMAIL,POSTCODE,STATUS,DESCRIPTION,
+		UPDATEUSER,UPDATEDATE,DELFLAG,AUTHORGID,USER_STAT_CHG_TIME)
+		VALUES
+		(#{seqNo},#{userid},#{username},#{sex},#{orgid},#{tel},#{address},
+		#{deptname},#{station},#{email},#{postcode},#{status},#{description},
+		#{updateuser},#{updatedate},#{delflag},#{authorgid},#{USER_STAT_CHG_TIME})
+	</insert>
+	<update id="modifyUser" parameterType="Map">
+		UPDATE PBCRS_SYS_USER SET
+		USERID =#{userid},
+		USERNAME=#{username},
+		SEX=#{sex},
+		ORGID=#{orgid},
+		TEL=#{tel},
+		ADDRESS=#{address},
+		DEPTNAME=#{deptname},
+		STATION=#{station},
+		EMAIL=#{email},
+		POSTCODE=#{postcode},
+		DESCRIPTION=#{description},
+		AUTHORGID=#{authorgid}
+		WHERE
+		USERID
+		=#{userid}
+	</update>
+	<update id="disableUser" parameterType="Map">
+		UPDATE PBCRS_SYS_USER SET
+		STATUS='0',
+		USER_STAT_CHG_TIME=#{USER_STAT_CHG_TIME}
+		WHERE
+		USERID =#{userid}
+	</update>
+	<update id="enableUser" parameterType="Map">
+		UPDATE PBCRS_SYS_USER SET
+		STATUS='1',
+		USER_STAT_CHG_TIME=#{USER_STAT_CHG_TIME}
+		WHERE
+		USERID =#{userid}
+	</update>
+	<delete id="deleteUser" parameterType="Map">
+		delete from PBCRS_SYS_USER
+		t
+		WHERE
+		t.USERID =#{userid}
+	</delete>
+
+	<insert id="createUserPassword" parameterType="Map">
+		INSERT INTO
+		PBCRS_SYS_USER_PASSWORD(USERID,PASSWORD,UPDATEUSER,UPDATEDATE)
+		VALUES(#{USERID},#{PASSWORD},#{UPDATEUSER},#{UPDATEDATE})
+	</insert>
+	<insert id="createUserPasswordLog" parameterType="Map">
+		INSERT INTO
+		PBCRS_SYS_USER_PASSWORD_LOG(SERIALNO,USERID,PASSWORD,UPDATEUSER,UPDATEDATE,DELFLAG)
+		VALUES(SEQ_PBCRS_SYS_USER_LOG.NEXTVAL,#{USERID},#{PASSWORD},#{UPDATEUSER},#{UPDATEDATE},#{DELFLAG})
+	</insert>
+	<update id="modifyUserPassword" parameterType="Map">
+		UPDATE
+		PBCRS_SYS_USER_PASSWORD SET
+		PASSWORD=#{PASSWORD},
+		UPDATEUSER=#{UPDATEUSER},
+		UPDATEDATE=#{UPDATEDATE}
+		WHERE
+		USERID
+		=#{USERID}
+	</update>
+	<delete id="deleteUserPassword" parameterType="Map">
+		delete from
+		PBCRS_SYS_USER_PASSWORD
+		WHERE
+		USERID =#{userid}
+	</delete>
+
+	<delete id="deleteUserRole" parameterType="Map">
+		delete from
+		PBCRS_SYS_USER_ROLE
+		WHERE
+		USERID =#{userid}
+	</delete>
+
+	<select id="getPerUserCount" parameterType="Map" resultType="int">
+		SELECT
+		count(*)
+		FROM PBCRS_PER_USER
+		WHERE userid = #{userid}
+	</select>
+	<select id="getEntUserCount" parameterType="Map" resultType="int">
+		SELECT
+		count(*)
+		FROM PBCRS_ENT_USER
+		WHERE userid = #{userid}
+	</select>
+	 <select id="getUserFlagCount" parameterType="String" resultType="int">
+		SELECT
+		count(*)
+		FROM PBCRS_SYS_USER
+		WHERE userid = #{userid}
+		and status =
+		'1'
+	</select> 
+	<select id="getUserPassword" parameterType="String" resultType="map">
+		SELECT sysuser.username,
+		syspass.password
+		FROM PBCRS_sys_user sysuser,
+		PBCRS_sys_user_password syspass
+		WHERE
+		sysuser.userid = syspass.userid
+		AND
+		sysuser.userid = #{userId}
+	</select>
+	<select id="getSysRoleByUserId" parameterType="map" resultType="map">
+		select t.roleid as "roleId",
+		t.rolename as "roleName",
+		t.status as "status",
+		t.role_level as "level",
+		t1.userid as "userId"
+		from PBCRS_sys_role_info t
+		left join PBCRS_sys_user_role t1
+		on t1.roleid = t.roleid
+		and t1.userid = #{userId}
+		where 1=1
+		and not exists 
+		(select blockid
+          from PBCRS_SYS_ROLE_BLOCK b,
+               PBCRS_sys_user       loginuser,
+               PBCRS_sys_user_role  loginrole
+         where b.blockid = t.roleid
+           and b.roleid = loginrole.roleid
+           and loginuser.userid = #{loginUserId}
+           and loginuser.userid = loginrole.userid)
+		
+		order by t.role_order
+	</select>
+	<select id="getNotInRole" parameterType="map" resultType="map">
+		select distinct rg1.roleid as "roleId"
+		from PBCRS_sys_role_group rg1
+		where rg1.roleid not in
+		(select distinct roleid
+		from PBCRS_SYS_ROLE_GROUP
+		where groupid in
+		(select distinct rg.groupid
+		from PBCRS_sys_role_group rg
+		left join PBCRS_sys_role_group_info rgi
+		on rgi.groupid = rg.groupid
+		where rgi.status = '1'
+		and rg.roleid in
+		(select ur.roleid
+		from PBCRS_sys_user_role ur
+		where ur.userid = #{loginUserId})))
+	</select>
+	<select id="getUserRoleGroupMutex" parameterType="map"
+		resultType="map">
+		select t.groupid as "groupId", count(*) as "num"
+		from PBCRS_sys_role_group_info t
+		left join PBCRS_sys_role_group t1
+		on t1.groupid = t.groupid
+		where 1 = 1
+		and t.status = '0'
+		and t1.roleid in
+		<foreach item="item" index="index" collection="roleList" open="("
+			separator="," close=")">
+			#{item}
+		</foreach>
+		group by t.groupid
+	</select>
+	<select id="getUserRoleByUserId" parameterType="map" resultType="map">
+		select t.roleid as "roleId",
+		t.rolename as "roleName",
+		t.status as "status",
+		t.role_level as "level",
+		t1.userid as "userId",
+		t.VALID_CODE_FLAG
+		from PBCRS_sys_role_info t
+		left join PBCRS_sys_user_role t1
+		on t1.roleid = t.roleid
+		and t1.userid = #{userid}
+	</select>
+	<select id="findOrgLevel" resultType="map" parameterType="Map">
+		select t.org_level as "orgLevel"
+		from PBCRS_sys_org t
+		where t.sys_org_id = #{authOrgId}
+	</select>
+	<delete id="delUserRole" parameterType="Map">
+		delete from
+		PBCRS_sys_user_role
+		WHERE
+		USERID =#{userid}
+	</delete>
+	<insert id="saveUserRole" parameterType="Map">
+		INSERT INTO
+		PBCRS_sys_user_role(USERID,ROLEID,UPDATEUSER,UPDATEDATE)
+		VALUES(#{userid},#{roleId},#{updateuser},#{updatedate})
+	</insert>
+	<insert id="saveUserRoleLog" parameterType="Map">
+		INSERT INTO
+		PBCRS_sys_user_role_log(SERIALNO,USERID,ROLEID,UPDATEUSER,UPDATEDATE)
+		VALUES(#{seqNo},#{userid},#{roleId},#{updateuser},#{updatedate})
+	</insert>
+	<select id="getOrgList" resultType="map">
+		select t.sys_org_id as "ID",t.sys_org_name as "TEXT"
+		from PBCRS_sys_org t
+		where t.status = 'Y'
+		<!-- ORDER BY convert(t.sys_org_name using gbk)
+		collate gbk_chinese_ci -->
+		
+	</select>
+	<select id="getQueryOrgList" resultType="map" parameterType="Map">
+		select t.sys_org_id as "id", t.sys_org_name as "text"
+		from PBCRS_sys_org t
+		<!-- ORDER BY convert(t.sys_org_name using gbk)
+		collate gbk_chinese_ci -->
+	</select>
+	<select id="getQueryAuthOrgList" resultType="map" parameterType="Map">
+		select t.sys_org_id as "ID", t.sys_org_name as "TEXT"
+		from PBCRS_sys_org t
+		where t.status = 'Y'
+		and t.org_index like (
+		'%' ||
+		(select t1.authorgid from PBCRS_sys_user t1 where t1.userid = #{userId}) ||
+		'%')
+		<!-- ORDER BY convert(t.sys_org_name using gbk)
+		collate gbk_chinese_ci -->
+	</select>
+	<select id="getUserRoleCounts" resultType="int" parameterType="Map">
+		select count(*)
+		from PBCRS_SYS_USER_ROLE t
+		where t.USERID =#{userid}
+	</select>
+
+	<select id="selectLastLogin" resultType="Map" parameterType="Map">
+		select *
+		from (select @rownum:=@rownum+1 rn, t.*
+		from (select r.*
+		from PBCRS_sys_logging r
+		where r.user_id = #{USER_ID}
+		order by r.oper_time desc) t) b
+		where rn = 1
+	</select>
+
+	<select id="getDocResetRoleByLoginUser" resultType="Map" parameterType="Map">
+select ur.roleid from PBCRS_sys_user_role ur,PBCRS_sys_code rp
+where ur.roleid = rp.sys_code
+and rp.sys_code_type=#{docrole_type}
+and ur.userid = #{userId}
+	</select>
+    <update id="updateUserIdentifyingCode" parameterType="Map">
+        UPDATE PBCRS_SYS_USER SET
+        VALID_CODE = #{VALID_CODE},
+        VALID_CODE_TIME = #{VALID_CODE_TIME},
+        VALID_CODE_STAT = #{VALID_CODE_STAT}
+        WHERE
+        USERID =#{USERID}
+    </update>
+
+</mapper>

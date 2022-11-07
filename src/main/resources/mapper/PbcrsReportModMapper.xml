@@ -1,0 +1,920 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.hkbank.pbcrs.mapper.PbcrsReportModMapper">
+ <!--  <resultMap id="BaseResultMap" type="com.hkbank.pbcrs.model.PbcrsReportMod">
+    <result column=ReportModId jdbcType="VARCHAR" property="ReportModId" />
+    <result column="InfRecType" jdbcType="VARCHAR" property="InfRecType" />
+    <result column="entName" jdbcType="VARCHAR" property="entName" />
+    <result column="entCertType" jdbcType="VARCHAR" property="entCertType" />
+    <result column="entCertNum" jdbcType="VARCHAR" property="entCertNum" />
+    <result column="rptDate" jdbcType="VARCHAR" property="rptDate" />
+  </resultMap> -->
+  
+    	<sql id="sql_selectCont">
+		
+  	 <if test="queryEntName!=null and queryEntName!=''">
+    	and A.ENTNAME like '%${queryEntName}%'
+    </if>
+    <if test="queryRptDate!=null and queryRptDate!=''">
+    	and A.RPTDATE = #{queryRptDate}
+    </if>
+     <if test="queryEntCertNum!=null and queryEntCertNum!=''">
+    	and A.EntCertNum = #{queryEntCertNum}
+    </if>
+    <if test="reportStaut !=null and reportStaut !=''">
+    	and A.reportStaut = #{reportStaut}
+    </if>
+     <if test="queryRptType !=null and queryRptType !=''">
+    	and A.InfRecType = #{queryRptType}
+    </if>
+		
+	</sql>
+	
+  <select id="selectAllbyContCount" resultType="int" parameterType="map">
+SELECT count(1) from ( 
+select eb.BsSgmtSeqNo ReportModId,eb.InfRecType InfRecType,eb.EntName entName,eb.EntCertType entCertType,eb.entcertnum entCertNum,eb.RPTDATE rptDate<!-- ,nvl((select reportStaut from pbcrs_report_condition where CONDITIONSEQNO like '%'||eb.BsSgmtSeqNo||'%'),'0') reportStaut --> 
+from PBCRS_REPORT_ENBASINFBSSGMTM eb inner join PBCRS_REPORT_ENBASINFBSSGMT ebase on eb.BsSgmtSeqNo = ebase.BsSgmtSeqNo  where eb.reportflag='0' and ebase.reportflag='0' and ebase.RPTDATECODE ='10'
+union
+select es.balancesheetbssgmtseqno ReportModId,es.infrectype InfRecType,es.entname entName,es.entcerttype entCertType,es.entcertnum entCertNum,es.rptdate rptDate<!-- ,nvl((select reportStaut from pbcrs_report_condition where CONDITIONSEQNO like '%'||es.balancesheetbssgmtseqno||'%'),'0') reportStaut --> 
+from PBCRS_REPORT_BALANCESHEETBSSG2 es inner join PBCRS_REPORT_BALANCESHEETBSSGM bs on es.balancesheetbssgmtseqno = bs.balancesheetbssgmtseqno where es.reportflag='0' and bs.reportflag='0' and bs.RPTDATECODE ='10'
+union
+select ei.incomestatementpabssgmtseqno ReportModId,ei.infrectype InfRecType,ei.entname entName,ei.entcerttype entCertType,ei.entcertnum entCertNum,ei.rptdate rptDate<!-- ,nvl((select reportStaut from pbcrs_report_condition where CONDITIONSEQNO like '%'||ei.incomestatementpabssgmtseqno||'%'),'0') reportStaut --> 
+from PBCRS_REPORT_INCOMESBSSGMTM ei inner join PBCRS_REPORT_INCOMESBSSGMT eic on ei.incomestatementpabssgmtseqno = eic.incomestatementpabssgmtseqno where ei.reportflag='0' and eic.reportflag='0' and eic.RPTDATECODE ='10'
+union
+select ec.cashflowsbssgmtseqno ReportModId,ec.infrectype InfRecType,ec.entname entName,ec.entcerttype entCertType,ec.entcertnum entCertNum,ec.rptdate rptDate<!-- ,nvl((select reportStaut from pbcrs_report_condition where CONDITIONSEQNO like '%'||ec.cashflowsbssgmtseqno||'%'),'0') reportStaut -->
+from PBCRS_REPORT_CASHFLOWSBSSGMTM ec inner join PBCRS_REPORT_CASHFLOWSBSSGMT eca on ec.cashflowsbssgmtseqno = eca.cashflowsbssgmtseqno    where ec.reportflag='0' and eca.reportflag='0' and eca.RPTDATECODE ='10'
+union
+select esi.institutionbsbssgmtseqno ReportModId,esi.infrectype InfRecType,esi.entname entName,esi.entcerttype entCertType,esi.entcertnum entCertNum,esi.rptdate rptDate<!-- ,nvl((select reportStaut from pbcrs_report_condition where CONDITIONSEQNO like '%'||esi.institutionbsbssgmtseqno||'%'),'0') reportStaut --> 
+from PBCRS_REPORT_INSBALSHEBSSGMTM esi inner join PBCRS_REPORT_INSBALSHEBSSGMT esin on esi.institutionbsbssgmtseqno = esin.institutionbsbssgmtseqno where esi.reportflag='0' and esin.reportflag='0' and esin.RPTDATECODE ='10'
+union
+select eim.incomeandesbssgmtseqno ReportModId,eim.infrectype InfRecType,eim.entname entName,eim.entcerttype entCertType,eim.entcertnum entCertNum,eim.rptdate rptDate<!-- ,nvl((select reportStaut from pbcrs_report_condition where CONDITIONSEQNO like '%'||eim.incomeandesbssgmtseqno||'%'),'0') reportStaut --> 
+from PBCRS_REPORT_INCANDEXPSTBSSGMM eim inner join PBCRS_REPORT_INCANDEXPSTBSSGMT eimn on eim.incomeandesbssgmtseqno = eimn.incomeandesbssgmtseqno  where eim.reportflag='0' and eimn.reportflag='0' and eimn.RPTDATECODE ='10'
+union
+select em.motgacltalctrctbssgmtseqno ReportModId,em.infrectype InfRecType,em.name entName,em.certtype entCertType,em.certnum entCertNum,em.rptdate rptDate<!-- ,nvl((select reportStaut from pbcrs_report_condition where CONDITIONSEQNO like '%'||em.motgacltalctrctbssgmtseqno||'%'),'0') reportStaut --> 
+from PBCRS_REPORT_MOTCLTCTRBSSGMTM em inner join PBCRS_REPORT_MOTCLTCTRBSSGMT emm on em.motgacltalctrctbssgmtseqno = emm.motgacltalctrctbssgmtseqno and emm.sourcesys in('MIS','SLNENT','CRMS') where em.reportflag='0' and em.sourcesys in('MIS','SLNENT','CRMS') and emm.reportflag='0' and emm.RPTDATECODE in('10','20')
+
+union
+select enctrc.CtrctBsSgmtSeqNo ReportModId,enctrc.infrectype InfRecType,enctrc.name entName,enctrc.IDTYPE entCertType,enctrc.IDNUM entCertNum,enctrc.rptdate rptDate<!-- ,nvl((select reportStaut from pbcrs_report_condition where CONDITIONSEQNO like '%'||ectr.enctrctinfmdfcseqno||'%'),'0') reportStaut  -->
+from PBCRS_REPORT_ENCTRCTBSSGMTM ectr inner join PBCRS_REPORT_ENCTRCTBSSGMT enctrc on ectr.CtrctBsSgmtSeqNo=enctrc.CtrctBsSgmtSeqNo where ectr.reportflag='0' AND enctrc.reportflag='0'
+and not exists(  select ectr.enctrctinfmdfcseqno from PBCRS_REPORT_ENCTRINFMDFBSSGMT ectr  where ectr.enctrctinfmdfcseqno =enctrc.CtrctBsSgmtSeqNo and  ectr.reportflag='0')
+union
+select enctrc.CtrctBsSgmtSeqNo ReportModId,enctrc.infrectype InfRecType,enctrc.name entName,enctrc.IDTYPE entCertType,enctrc.IDNUM entCertNum,enctrc.rptdate rptDate
+from PBCRS_REPORT_ENCREDITLIMSGMTM ectr inner join PBCRS_REPORT_ENCTRCTBSSGMT enctrc on ectr.CREDITLIMSGMTSEQNO=enctrc.CtrctBsSgmtSeqNo where ectr.reportflag='0' AND enctrc.reportflag='0'
+and not exists(  select ectr.enctrctinfmdfcseqno from PBCRS_REPORT_ENCTRINFMDFBSSGMT ectr  where ectr.enctrctinfmdfcseqno =enctrc.CtrctBsSgmtSeqNo and  ectr.reportflag='0')
+<!-- 借贷 -->
+union
+select enacc.ACCTBSSGMTSEQNO ReportModId,enacc.infrectype InfRecType,enacc.name entName,enacc.IDType entCertType,enacc.IDNum entCertNum,enacc.rptdate rptDate
+from PBCRS_REPORT_ENACCTBSSGMTM eacc inner join PBCRS_REPORT_ENACCTBSSGMT enacc on eacc.ACCTBSSGMTSEQNO=enacc.AcctBsSgmtSeqNo where eacc.reportflag='0' and enacc.reportflag='0'
+and not exists(  select eacc.bssgmtseqno from PBCRS_REPORT_ENACCINFMDFBSSGMT eacc  where eacc.bssgmtseqno = enacc.ACCTBSSGMTSEQNO and  eacc.reportflag='0')
+union
+select enacc.ACCTBSSGMTSEQNO ReportModId,enacc.infrectype InfRecType,enacc.name entName,enacc.IDType entCertType,enacc.IDNum entCertNum,enacc.rptdate rptDate
+from PBCRS_REPORT_ENACCTBSINFSGMTM eacc inner join PBCRS_REPORT_ENACCTBSSGMT enacc on eacc.ACCTBSINFSGMTSEQNO=enacc.AcctBsSgmtSeqNo where eacc.reportflag='0' and enacc.reportflag='0'
+and not exists(  select eacc.bssgmtseqno from PBCRS_REPORT_ENACCINFMDFBSSGMT eacc  where eacc.bssgmtseqno = enacc.ACCTBSSGMTSEQNO and  eacc.reportflag='0')
+union
+select enacc.ACCTBSSGMTSEQNO ReportModId,enacc.infrectype InfRecType,enacc.name entName,enacc.IDType entCertType,enacc.IDNum entCertNum,enacc.rptdate rptDate
+from PBCRS_REPORT_ENACCTCREDSGMTM eacc inner join PBCRS_REPORT_ENACCTBSSGMT enacc on eacc.ACCTCREDSGMTSEQNO=enacc.AcctBsSgmtSeqNo where eacc.reportflag='0' and enacc.reportflag='0'
+and not exists(  select eacc.bssgmtseqno from PBCRS_REPORT_ENACCINFMDFBSSGMT eacc  where eacc.bssgmtseqno = enacc.ACCTBSSGMTSEQNO and  eacc.reportflag='0')
+union
+select enacc.ACCTBSSGMTSEQNO ReportModId,enacc.infrectype InfRecType,enacc.name entName,enacc.IDType entCertType,enacc.IDNum entCertNum,enacc.rptdate rptDate
+from PBCRS_REPORT_ACTLBLTYINFSGMTM eacc inner join PBCRS_REPORT_ENACCTBSSGMT enacc on eacc.ACTLBLTYINFSGMTSEQNO=enacc.AcctBsSgmtSeqNo where eacc.reportflag='0' and enacc.reportflag='0'
+and not exists(  select eacc.bssgmtseqno from PBCRS_REPORT_ENACCINFMDFBSSGMT eacc  where eacc.bssgmtseqno = enacc.ACCTBSSGMTSEQNO and  eacc.reportflag='0')
+union
+select enacc.ACCTBSSGMTSEQNO ReportModId,enacc.infrectype InfRecType,enacc.name entName,enacc.IDType entCertType,enacc.IDNum entCertNum,enacc.rptdate rptDate
+from PBCRS_REPORT_ENMOTCLTCTRINFSM eacc inner join PBCRS_REPORT_ENACCTBSSGMT enacc on eacc.MOTGACLTALCTRCTINFSGMTSEQNO=enacc.AcctBsSgmtSeqNo where eacc.reportflag='0' and enacc.reportflag='0'
+and not exists(  select eacc.bssgmtseqno from PBCRS_REPORT_ENACCINFMDFBSSGMT eacc  where eacc.bssgmtseqno = enacc.ACCTBSSGMTSEQNO and  eacc.reportflag='0')
+union
+select enacc.ACCTBSSGMTSEQNO ReportModId,enacc.infrectype InfRecType,enacc.name entName,enacc.IDType entCertType,enacc.IDNum entCertNum,enacc.rptdate rptDate
+from PBCRS_REPORT_ENACCSPETRSSGMTM eacc inner join PBCRS_REPORT_ENACCTBSSGMT enacc on eacc.ACCTSPECTRSTDSPNSGMTSEQNO=enacc.AcctBsSgmtSeqNo where eacc.reportflag='0' and enacc.reportflag='0'
+and not exists(  select eacc.bssgmtseqno from PBCRS_REPORT_ENACCINFMDFBSSGMT eacc  where eacc.bssgmtseqno = enacc.ACCTBSSGMTSEQNO and  eacc.reportflag='0')
+union
+select enacc.ACCTBSSGMTSEQNO ReportModId,enacc.infrectype InfRecType,enacc.name entName,enacc.IDType entCertType,enacc.IDNum entCertNum,enacc.rptdate rptDate
+from PBCRS_REPORT_ENRLTREPINFSGMTM eacc inner join PBCRS_REPORT_ENACCTBSSGMT enacc on eacc.RLTREPYMTINFSGMTSEQNO=enacc.AcctBsSgmtSeqNo where eacc.reportflag='0' and enacc.reportflag='0'
+and not exists(  select eacc.bssgmtseqno from PBCRS_REPORT_ENACCINFMDFBSSGMT eacc  where eacc.bssgmtseqno = enacc.ACCTBSSGMTSEQNO and  eacc.reportflag='0')
+
+<!-- 担保 -->
+union
+select enguar.GuarAcctBsSgmtSeqNo ReportModId,enguar.infrectype InfRecType,enguar.name entName,enguar.IDType entCertType,enguar.IDNum entCertNum,enguar.rptdate rptDate
+from PBCRS_REPORT_ENGUARACCTBSSGMTM esec inner join PBCRS_REPORT_ENGUARACCTBSSGMT enguar on esec.GuarAcctBsSgmtSeqNo=enguar.GuarAcctBsSgmtSeqNo  where esec.reportflag='0' and enguar.reportflag='0'
+and not exists(  select esec.bssgmtseqno from PBCRS_REPORT_ENSECACCMDFBSSGMT esec  where esec.bssgmtseqno = enguar.GuarAcctBsSgmtSeqNo and   esec.reportflag='0')
+union
+select enguar.GuarAcctBsSgmtSeqNo ReportModId,enguar.infrectype InfRecType,enguar.name entName,enguar.IDType entCertType,enguar.IDNum entCertNum,enguar.rptdate rptDate
+from PBCRS_REPORT_ENGUAACCBSINFSGMM esec inner join PBCRS_REPORT_ENGUARACCTBSSGMT enguar on esec.GUARACCTBSINFSGMTSEQNO=enguar.GuarAcctBsSgmtSeqNo  where esec.reportflag='0' and enguar.reportflag='0'
+and not exists(  select esec.bssgmtseqno from PBCRS_REPORT_ENSECACCMDFBSSGMT esec  where esec.bssgmtseqno = enguar.GuarAcctBsSgmtSeqNo and   esec.reportflag='0')
+union
+select enguar.GuarAcctBsSgmtSeqNo ReportModId,enguar.infrectype InfRecType,enguar.name entName,enguar.IDType entCertType,enguar.IDNum entCertNum,enguar.rptdate rptDate
+from PBCRS_REPORT_GSERLTREPINFSGMTM esec inner join PBCRS_REPORT_ENGUARACCTBSSGMT enguar on esec.RLTREPYMTINFSGMTSEQNO=enguar.GuarAcctBsSgmtSeqNo  where esec.reportflag='0' and enguar.reportflag='0'
+and not exists(  select esec.bssgmtseqno from PBCRS_REPORT_ENSECACCMDFBSSGMT esec  where esec.bssgmtseqno = enguar.GuarAcctBsSgmtSeqNo and   esec.reportflag='0')
+union
+select enguar.GuarAcctBsSgmtSeqNo ReportModId,enguar.infrectype InfRecType,enguar.name entName,enguar.IDType entCertType,enguar.IDNum entCertNum,enguar.rptdate rptDate
+from PBCRS_REPORT_EGUARLTREPINFSGMM esec inner join PBCRS_REPORT_ENGUARACCTBSSGMT enguar on esec.GUARRLTREPYMTINFSGMTSEQNO=enguar.GuarAcctBsSgmtSeqNo  where esec.reportflag='0' and enguar.reportflag='0'
+and not exists(  select esec.bssgmtseqno from PBCRS_REPORT_ENSECACCMDFBSSGMT esec  where esec.bssgmtseqno = enguar.GuarAcctBsSgmtSeqNo and   esec.reportflag='0')
+
+) A where 1=1 
+<include refid="sql_selectCont"></include>
+  </select>
+  
+<select id="selectAllbyContPage" resultType="map" parameterType="map"> 
+    select * from (
+	    SELECT A.*, ROWNUM RN  from ( 
+select ebase.BsSgmtSeqNo ReportModId,ebase.InfRecType InfRecType,ebase.EntName entName,ebase.EntCertType entCertType,ebase.entcertnum entCertNum,ebase.RPTDATE rptDate<!-- ,nvl((select reportStaut from pbcrs_report_condition where CONDITIONSEQNO like '%'||eb.BsSgmtSeqNo||'%'),'0') reportStaut --> 
+from PBCRS_REPORT_ENBASINFBSSGMTM eb inner join PBCRS_REPORT_ENBASINFBSSGMT ebase on eb.BsSgmtSeqNo = ebase.BsSgmtSeqNo  where eb.reportflag='0' and ebase.reportflag='0' and ebase.RPTDATECODE ='10'
+union
+select bs.balancesheetbssgmtseqno ReportModId,bs.infrectype InfRecType,bs.entname entName,bs.entcerttype entCertType,bs.entcertnum entCertNum,bs.rptdate rptDate<!-- ,nvl((select reportStaut from pbcrs_report_condition where CONDITIONSEQNO like '%'||es.balancesheetbssgmtseqno||'%'),'0') reportStaut --> 
+from PBCRS_REPORT_BALANCESHEETBSSG2 es inner join PBCRS_REPORT_BALANCESHEETBSSGM bs on es.balancesheetbssgmtseqno = bs.balancesheetbssgmtseqno where es.reportflag='0' and bs.reportflag='0' and bs.RPTDATECODE ='10'
+union
+select eic.incomestatementpabssgmtseqno ReportModId,eic.infrectype InfRecType,eic.entname entName,eic.entcerttype entCertType,eic.entcertnum entCertNum,ei.rptdate rptDate<!-- ,nvl((select reportStaut from pbcrs_report_condition where CONDITIONSEQNO like '%'||ei.incomestatementpabssgmtseqno||'%'),'0') reportStaut --> 
+from PBCRS_REPORT_INCOMESBSSGMTM ei inner join PBCRS_REPORT_INCOMESBSSGMT eic on ei.incomestatementpabssgmtseqno = eic.incomestatementpabssgmtseqno where ei.reportflag='0' and eic.reportflag='0' and eic.RPTDATECODE ='10'
+union
+select eca.cashflowsbssgmtseqno ReportModId,eca.infrectype InfRecType,eca.entname entName,eca.entcerttype entCertType,eca.entcertnum entCertNum,eca.rptdate rptDate<!-- ,nvl((select reportStaut from pbcrs_report_condition where CONDITIONSEQNO like '%'||ec.cashflowsbssgmtseqno||'%'),'0') reportStaut -->
+from PBCRS_REPORT_CASHFLOWSBSSGMTM ec inner join PBCRS_REPORT_CASHFLOWSBSSGMT eca on ec.cashflowsbssgmtseqno = eca.cashflowsbssgmtseqno    where ec.reportflag='0' and eca.reportflag='0' and eca.RPTDATECODE ='10'
+union
+select esin.institutionbsbssgmtseqno ReportModId,esin.infrectype InfRecType,esin.entname entName,esin.entcerttype entCertType,esin.entcertnum entCertNum,esin.rptdate rptDate<!-- ,nvl((select reportStaut from pbcrs_report_condition where CONDITIONSEQNO like '%'||esi.institutionbsbssgmtseqno||'%'),'0') reportStaut --> 
+from PBCRS_REPORT_INSBALSHEBSSGMTM esi inner join PBCRS_REPORT_INSBALSHEBSSGMT esin on esi.institutionbsbssgmtseqno = esin.institutionbsbssgmtseqno where esi.reportflag='0' and esin.reportflag='0' and esin.RPTDATECODE ='10'
+union
+select eimn.incomeandesbssgmtseqno ReportModId,eimn.infrectype InfRecType,eimn.entname entName,eimn.entcerttype entCertType,eimn.entcertnum entCertNum,eimn.rptdate rptDate<!-- ,nvl((select reportStaut from pbcrs_report_condition where CONDITIONSEQNO like '%'||eim.incomeandesbssgmtseqno||'%'),'0') reportStaut --> 
+from PBCRS_REPORT_INCANDEXPSTBSSGMM eim inner join PBCRS_REPORT_INCANDEXPSTBSSGMT eimn on eim.incomeandesbssgmtseqno = eimn.incomeandesbssgmtseqno  where eim.reportflag='0' and eimn.reportflag='0' and eimn.RPTDATECODE ='10'
+union
+select emm.motgacltalctrctbssgmtseqno ReportModId,emm.infrectype InfRecType,emm.name entName,emm.certtype entCertType,emm.certnum entCertNum,emm.rptdate rptDate<!-- ,nvl((select reportStaut from pbcrs_report_condition where CONDITIONSEQNO like '%'||em.motgacltalctrctbssgmtseqno||'%'),'0') reportStaut --> 
+from PBCRS_REPORT_MOTCLTCTRBSSGMTM em inner join PBCRS_REPORT_MOTCLTCTRBSSGMT emm on em.motgacltalctrctbssgmtseqno = emm.motgacltalctrctbssgmtseqno and emm.sourcesys in('MIS','SLNENT','CRMS') where em.reportflag='0' and em.sourcesys in('MIS','SLNENT','CRMS') and emm.reportflag='0' and emm.RPTDATECODE in('10','20')
+
+union
+select enctrc.CtrctBsSgmtSeqNo ReportModId,enctrc.infrectype InfRecType,enctrc.name entName,enctrc.IDTYPE entCertType,enctrc.IDNUM entCertNum,enctrc.rptdate rptDate<!-- ,nvl((select reportStaut from pbcrs_report_condition where CONDITIONSEQNO like '%'||ectr.enctrctinfmdfcseqno||'%'),'0') reportStaut  -->
+from PBCRS_REPORT_ENCTRCTBSSGMTM ectr inner join PBCRS_REPORT_ENCTRCTBSSGMT enctrc on ectr.CtrctBsSgmtSeqNo=enctrc.CtrctBsSgmtSeqNo where ectr.reportflag='0' AND enctrc.reportflag='0'
+and not exists(  select ectr.enctrctinfmdfcseqno from PBCRS_REPORT_ENCTRINFMDFBSSGMT ectr  where ectr.enctrctinfmdfcseqno =enctrc.CtrctBsSgmtSeqNo and  ectr.reportflag='0')
+union
+select enctrc.CtrctBsSgmtSeqNo ReportModId,enctrc.infrectype InfRecType,enctrc.name entName,enctrc.IDTYPE entCertType,enctrc.IDNUM entCertNum,enctrc.rptdate rptDate
+from PBCRS_REPORT_ENCREDITLIMSGMTM ectr inner join PBCRS_REPORT_ENCTRCTBSSGMT enctrc on ectr.CREDITLIMSGMTSEQNO=enctrc.CtrctBsSgmtSeqNo where ectr.reportflag='0' AND enctrc.reportflag='0'
+and not exists(  select ectr.enctrctinfmdfcseqno from PBCRS_REPORT_ENCTRINFMDFBSSGMT ectr  where ectr.enctrctinfmdfcseqno =enctrc.CtrctBsSgmtSeqNo and  ectr.reportflag='0')
+<!-- 借贷 -->
+union
+select enacc.ACCTBSSGMTSEQNO ReportModId,enacc.infrectype InfRecType,enacc.name entName,enacc.IDType entCertType,enacc.IDNum entCertNum,enacc.rptdate rptDate
+from PBCRS_REPORT_ENACCTBSSGMTM eacc inner join PBCRS_REPORT_ENACCTBSSGMT enacc on eacc.ACCTBSSGMTSEQNO=enacc.AcctBsSgmtSeqNo where eacc.reportflag='0' and enacc.reportflag='0'
+and not exists(  select eacc.bssgmtseqno from PBCRS_REPORT_ENACCINFMDFBSSGMT eacc  where eacc.bssgmtseqno = enacc.ACCTBSSGMTSEQNO and  eacc.reportflag='0')
+union
+select enacc.ACCTBSSGMTSEQNO ReportModId,enacc.infrectype InfRecType,enacc.name entName,enacc.IDType entCertType,enacc.IDNum entCertNum,enacc.rptdate rptDate
+from PBCRS_REPORT_ENACCTBSINFSGMTM eacc inner join PBCRS_REPORT_ENACCTBSSGMT enacc on eacc.ACCTBSINFSGMTSEQNO=enacc.AcctBsSgmtSeqNo where eacc.reportflag='0' and enacc.reportflag='0'
+and not exists(  select eacc.bssgmtseqno from PBCRS_REPORT_ENACCINFMDFBSSGMT eacc  where eacc.bssgmtseqno = enacc.ACCTBSSGMTSEQNO and  eacc.reportflag='0')
+union
+select enacc.ACCTBSSGMTSEQNO ReportModId,enacc.infrectype InfRecType,enacc.name entName,enacc.IDType entCertType,enacc.IDNum entCertNum,enacc.rptdate rptDate
+from PBCRS_REPORT_ENACCTCREDSGMTM eacc inner join PBCRS_REPORT_ENACCTBSSGMT enacc on eacc.ACCTCREDSGMTSEQNO=enacc.AcctBsSgmtSeqNo where eacc.reportflag='0' and enacc.reportflag='0'
+and not exists(  select eacc.bssgmtseqno from PBCRS_REPORT_ENACCINFMDFBSSGMT eacc  where eacc.bssgmtseqno = enacc.ACCTBSSGMTSEQNO and  eacc.reportflag='0')
+union
+select enacc.ACCTBSSGMTSEQNO ReportModId,enacc.infrectype InfRecType,enacc.name entName,enacc.IDType entCertType,enacc.IDNum entCertNum,enacc.rptdate rptDate
+from PBCRS_REPORT_ACTLBLTYINFSGMTM eacc inner join PBCRS_REPORT_ENACCTBSSGMT enacc on eacc.ACTLBLTYINFSGMTSEQNO=enacc.AcctBsSgmtSeqNo where eacc.reportflag='0' and enacc.reportflag='0'
+and not exists(  select eacc.bssgmtseqno from PBCRS_REPORT_ENACCINFMDFBSSGMT eacc  where eacc.bssgmtseqno = enacc.ACCTBSSGMTSEQNO and  eacc.reportflag='0')
+union
+select enacc.ACCTBSSGMTSEQNO ReportModId,enacc.infrectype InfRecType,enacc.name entName,enacc.IDType entCertType,enacc.IDNum entCertNum,enacc.rptdate rptDate
+from PBCRS_REPORT_ENMOTCLTCTRINFSM eacc inner join PBCRS_REPORT_ENACCTBSSGMT enacc on eacc.MOTGACLTALCTRCTINFSGMTSEQNO=enacc.AcctBsSgmtSeqNo where eacc.reportflag='0' and enacc.reportflag='0'
+and not exists(  select eacc.bssgmtseqno from PBCRS_REPORT_ENACCINFMDFBSSGMT eacc  where eacc.bssgmtseqno = enacc.ACCTBSSGMTSEQNO and  eacc.reportflag='0')
+union
+select enacc.ACCTBSSGMTSEQNO ReportModId,enacc.infrectype InfRecType,enacc.name entName,enacc.IDType entCertType,enacc.IDNum entCertNum,enacc.rptdate rptDate
+from PBCRS_REPORT_ENACCSPETRSSGMTM eacc inner join PBCRS_REPORT_ENACCTBSSGMT enacc on eacc.ACCTSPECTRSTDSPNSGMTSEQNO=enacc.AcctBsSgmtSeqNo where eacc.reportflag='0' and enacc.reportflag='0'
+and not exists(  select eacc.bssgmtseqno from PBCRS_REPORT_ENACCINFMDFBSSGMT eacc  where eacc.bssgmtseqno = enacc.ACCTBSSGMTSEQNO and  eacc.reportflag='0')
+union
+select enacc.ACCTBSSGMTSEQNO ReportModId,enacc.infrectype InfRecType,enacc.name entName,enacc.IDType entCertType,enacc.IDNum entCertNum,enacc.rptdate rptDate
+from PBCRS_REPORT_ENRLTREPINFSGMTM eacc inner join PBCRS_REPORT_ENACCTBSSGMT enacc on eacc.RLTREPYMTINFSGMTSEQNO=enacc.AcctBsSgmtSeqNo where eacc.reportflag='0' and enacc.reportflag='0'
+and not exists(  select eacc.bssgmtseqno from PBCRS_REPORT_ENACCINFMDFBSSGMT eacc  where eacc.bssgmtseqno = enacc.ACCTBSSGMTSEQNO and  eacc.reportflag='0')
+
+<!-- 担保 -->
+union
+select enguar.GuarAcctBsSgmtSeqNo ReportModId,enguar.infrectype InfRecType,enguar.name entName,enguar.IDType entCertType,enguar.IDNum entCertNum,enguar.rptdate rptDate
+from PBCRS_REPORT_ENGUARACCTBSSGMTM esec inner join PBCRS_REPORT_ENGUARACCTBSSGMT enguar on esec.GuarAcctBsSgmtSeqNo=enguar.GuarAcctBsSgmtSeqNo  where esec.reportflag='0' and enguar.reportflag='0'
+and not exists(  select esec.bssgmtseqno from PBCRS_REPORT_ENSECACCMDFBSSGMT esec  where esec.bssgmtseqno = enguar.GuarAcctBsSgmtSeqNo and   esec.reportflag='0')
+union
+select enguar.GuarAcctBsSgmtSeqNo ReportModId,enguar.infrectype InfRecType,enguar.name entName,enguar.IDType entCertType,enguar.IDNum entCertNum,enguar.rptdate rptDate
+from PBCRS_REPORT_ENGUAACCBSINFSGMM esec inner join PBCRS_REPORT_ENGUARACCTBSSGMT enguar on esec.GUARACCTBSINFSGMTSEQNO=enguar.GuarAcctBsSgmtSeqNo  where esec.reportflag='0' and enguar.reportflag='0'
+and not exists(  select esec.bssgmtseqno from PBCRS_REPORT_ENSECACCMDFBSSGMT esec  where esec.bssgmtseqno = enguar.GuarAcctBsSgmtSeqNo and   esec.reportflag='0')
+union
+select enguar.GuarAcctBsSgmtSeqNo ReportModId,enguar.infrectype InfRecType,enguar.name entName,enguar.IDType entCertType,enguar.IDNum entCertNum,enguar.rptdate rptDate
+from PBCRS_REPORT_GSERLTREPINFSGMTM esec inner join PBCRS_REPORT_ENGUARACCTBSSGMT enguar on esec.RLTREPYMTINFSGMTSEQNO=enguar.GuarAcctBsSgmtSeqNo  where esec.reportflag='0' and enguar.reportflag='0'
+and not exists(  select esec.bssgmtseqno from PBCRS_REPORT_ENSECACCMDFBSSGMT esec  where esec.bssgmtseqno = enguar.GuarAcctBsSgmtSeqNo and   esec.reportflag='0')
+union
+select enguar.GuarAcctBsSgmtSeqNo ReportModId,enguar.infrectype InfRecType,enguar.name entName,enguar.IDType entCertType,enguar.IDNum entCertNum,enguar.rptdate rptDate
+from PBCRS_REPORT_EGUARLTREPINFSGMM esec inner join PBCRS_REPORT_ENGUARACCTBSSGMT enguar on esec.GUARRLTREPYMTINFSGMTSEQNO=enguar.GuarAcctBsSgmtSeqNo  where esec.reportflag='0' and enguar.reportflag='0'
+and not exists(  select esec.bssgmtseqno from PBCRS_REPORT_ENSECACCMDFBSSGMT esec  where esec.bssgmtseqno = enguar.GuarAcctBsSgmtSeqNo and   esec.reportflag='0')
+
+) A
+	  	WHERE ROWNUM &lt;=${endindex}
+	  	<include refid="sql_selectCont"></include>
+	  	order by A.rptDate desc,rownum
+  	) where RN &gt;${startindex}
+  </select>
+  
+  
+<sql id="sql_selectInCondition">
+	<if test="queryIDName != null and queryIDName != ''">
+			and NAME like '%' || #{queryIDName} || '%'
+	</if>   
+	 <if test="queryIDNum != null and queryIDNum != ''">
+			and IDNUM like '%' || #{queryIDNum} || '%'
+	</if>  
+	 <if test="queryRptDate != null and queryRptDate != ''">
+			and rptdate = #{queryRptDate}
+	</if> 
+	<if test="queryRptType !=null and queryRptType !=''">
+    	and InfRecType = #{queryRptType}
+    </if>
+		
+</sql>
+<select id="selectInListCount" resultType="int" parameterType="map">
+select count(1) from (
+
+select b.BSSGMTSEQNO REPORTMODID,b.NAME,b.IDTYPE,b.IDNUM, b.INFRECTYPE,b.RPTDATE
+ from pbcrs_report_BsSgmtm  m
+ inner join pbcrs_report_BsSgmt b
+ on m.bssgmtseqno = b.bssgmtseqno
+ where b.REPORTFLAG='0' and m.reportflag='0' and b.RPTDATECODE='10'
+union all
+ <!--基础段-->
+ select b.AcctBsSgmtSeqNo REPORTMODID,b.Name,b.IDType,b.IDNum,b.INFRECTYPE,b.RPTDATE from pbcrs_report_AcctBsSgmt b
+ inner join pbcrs_report_AcctBsSgmtm m on b.ACCTBSSGMTSEQNO = m.ACCTBSSGMTSEQNO
+ where b.reportflag='0' and m.reportflag='0'
+ <!--基本信息段 -->
+ union all
+ select b.AcctBsSgmtSeqNo REPORTMODID,b.Name,b.IDType,b.IDNum,b.INFRECTYPE,b.RPTDATE from pbcrs_report_AcctBsSgmt b
+inner join pbcrs_report_AcctBsInfSgmtm m on b.ACCTBSSGMTSEQNO = m.ACCTBSINFSGMTSEQNO
+ where b.reportflag='0' and m.reportflag='0'
+union all
+  <!--相关还款责任人-->
+ select b.AcctBsSgmtSeqNo REPORTMODID,b.Name,b.IDType,b.IDNum,b.INFRECTYPE,b.RPTDATE from pbcrs_report_AcctBsSgmt b
+  inner join PBCRS_REPORT_RLTREPYMTINFSGMTm m on b.ACCTBSSGMTSEQNO = m.RLTREPYMTINFSGMTSEQNO
+ where b.reportflag='0' and m.reportflag='0'
+ union 
+  <!--抵质押物信息段-->
+  select b.AcctBsSgmtSeqNo REPORTMODID,b.Name,b.IDType,b.IDNum,b.INFRECTYPE,b.RPTDATE from pbcrs_report_AcctBsSgmt b
+  inner join PBCRS_REPORT_MOTCLTCTRINFSGMTm m on b.ACCTBSSGMTSEQNO = m.MOTGACLTALCTRCTINFSGMTSEQNO
+ where b.reportflag='0' and m.reportflag='0'
+  union 
+   <!-- 额度信息段 -->
+   select b.AcctBsSgmtSeqNo REPORTMODID,b.Name,b.IDType,b.IDNum,b.INFRECTYPE,b.RPTDATE from pbcrs_report_AcctBsSgmt b
+inner join  PBCRS_REPORT_ACCTCREDSGMTm m on b.ACCTBSSGMTSEQNO = m.ACCTCREDSGMTSEQNO
+ where b.reportflag='0' and m.reportflag='0'
+    <!--月度表现  -->
+    union 
+    select b.AcctBsSgmtSeqNo REPORTMODID,b.Name,b.IDType,b.IDNum,b.INFRECTYPE,b.RPTDATE from pbcrs_report_AcctBsSgmt b
+ inner join PBCRS_REPORT_ACCMTHBLGINFSGMTm m on b.ACCTBSSGMTSEQNO = m.ACCTMTHLYBLGINFSGMTSEQNO
+ where b.reportflag='0' and m.reportflag='0'
+  <!-- 非月度表现 -->
+   union 
+ select b.AcctBsSgmtSeqNo REPORTMODID,b.Name,b.IDType,b.IDNum,b.INFRECTYPE,b.RPTDATE from pbcrs_report_AcctBsSgmt b
+inner join  PBCRS_REPORT_ACCTDBTINFSGMTm m on b.ACCTBSSGMTSEQNO = m.ACCTDBTINFSGMTSEQNO
+ where b.reportflag='0' and m.reportflag='0'
+ union
+<!--授信基础段 --> 
+  select b.CtrctBsSgmtSeqNo REPORTMODID,b.Name,b.IDType,b.IDNum,b.INFRECTYPE,b.RPTDATE from PBCRS_REPORT_CTRCTBSSGMT b
+  inner join  PBCRS_REPORT_CTRCTBSSGMTm  m on b.CTRCTBSSGMTSEQNO=m.CTRCTBSSGMTSEQNO
+  where b.reportflag='0' and m.reportflag='0'
+  union 
+  <!--授信基本信息段  -->
+  select b.CtrctBsSgmtSeqNo REPORTMODID,b.Name,b.IDType,b.IDNum,b.INFRECTYPE,b.RPTDATE from PBCRS_REPORT_CTRCTBSSGMT b
+  inner join PBCRS_REPORT_CREDITLIMSGMTm m on b.CTRCTBSSGMTSEQNO=m.CREDITLIMSGMTSEQNO
+  where b.reportflag='0' and m.reportflag='0'
+  union
+  <!--  个人授信协议额度信息段-->
+   select b.CtrctBsSgmtSeqNo REPORTMODID,b.Name,b.IDType,b.IDNum,b.INFRECTYPE,b.RPTDATE from PBCRS_REPORT_CTRCTBSSGMT b
+  inner join PBCRS_REPORT_CREDITLIMSGMTm m on b.CTRCTBSSGMTSEQNO=m.CREDITLIMSGMTSEQNO
+  where b.reportflag='0' and m.reportflag='0'
+  
+  union 
+  
+  select b.MotgaCltalCtrctBsSgmtSeqNo REPORTMODID,b.name,b.CertType,b.CertNum,b.InfRecType,b.RPTDATE　from PBCRS_REPORT_MotCltCtrBsSgmt b
+  inner join PBCRS_REPORT_MotCltCtrBsSgmtm m on b.MotgaCltalCtrctBsSgmtSeqNo=m.MotgaCltalCtrctBsSgmtSeqNo
+  where b.reportflag='0' and m.reportflag='0' and b.rptdatecode !='30' and b.sourcesys in ('PLN','ILN','SLNIND')
+) A  where 1 = 1
+<include refid="sql_selectInCondition"></include>
+</select> 
+
+<select id="selectInListPage" resultType="map" parameterType="map">
+select * from (
+select A.*,rownum Rn from (
+select * from (
+select b.BSSGMTSEQNO REPORTMODID,b.NAME,b.IDTYPE,b.IDNUM, b.INFRECTYPE,b.RPTDATE
+ from pbcrs_report_BsSgmtm  m
+ inner join pbcrs_report_BsSgmt b
+ on m.bssgmtseqno = b.bssgmtseqno
+ where b.REPORTFLAG='0' and m.reportflag='0' and b.RPTDATECODE='10'
+union all
+ <!--基础段-->
+ select b.AcctBsSgmtSeqNo REPORTMODID,b.Name,b.IDType,b.IDNum,b.INFRECTYPE,b.RPTDATE from pbcrs_report_AcctBsSgmt b
+ inner join pbcrs_report_AcctBsSgmtm m on b.ACCTBSSGMTSEQNO = m.ACCTBSSGMTSEQNO
+ where b.reportflag='0' and m.reportflag='0'
+ <!--基本信息段 -->
+ union all
+ select b.AcctBsSgmtSeqNo REPORTMODID,b.Name,b.IDType,b.IDNum,b.INFRECTYPE,b.RPTDATE from pbcrs_report_AcctBsSgmt b
+inner join pbcrs_report_AcctBsInfSgmtm m on b.ACCTBSSGMTSEQNO = m.ACCTBSINFSGMTSEQNO
+ where b.reportflag='0' and m.reportflag='0'
+union all
+  <!--相关还款责任人-->
+ select b.AcctBsSgmtSeqNo REPORTMODID,b.Name,b.IDType,b.IDNum,b.INFRECTYPE,b.RPTDATE from pbcrs_report_AcctBsSgmt b
+  inner join PBCRS_REPORT_RLTREPYMTINFSGMTm m on b.ACCTBSSGMTSEQNO = m.RLTREPYMTINFSGMTSEQNO
+ where b.reportflag='0' and m.reportflag='0'
+ union 
+  <!--抵质押物信息段-->
+  select b.AcctBsSgmtSeqNo REPORTMODID,b.Name,b.IDType,b.IDNum,b.INFRECTYPE,b.RPTDATE from pbcrs_report_AcctBsSgmt b
+  inner join PBCRS_REPORT_MOTCLTCTRINFSGMTm m on b.ACCTBSSGMTSEQNO = m.MOTGACLTALCTRCTINFSGMTSEQNO
+ where b.reportflag='0' and m.reportflag='0'
+  union 
+   <!-- 额度信息段 -->
+   select b.AcctBsSgmtSeqNo REPORTMODID,b.Name,b.IDType,b.IDNum,b.INFRECTYPE,b.RPTDATE from pbcrs_report_AcctBsSgmt b
+inner join  PBCRS_REPORT_ACCTCREDSGMTm m on b.ACCTBSSGMTSEQNO = m.ACCTCREDSGMTSEQNO
+ where b.reportflag='0' and m.reportflag='0'
+    <!--月度表现  -->
+    union 
+    select b.AcctBsSgmtSeqNo REPORTMODID,b.Name,b.IDType,b.IDNum,b.INFRECTYPE,b.RPTDATE from pbcrs_report_AcctBsSgmt b
+ inner join PBCRS_REPORT_ACCMTHBLGINFSGMTm m on b.ACCTBSSGMTSEQNO = m.ACCTMTHLYBLGINFSGMTSEQNO
+ where b.reportflag='0' and m.reportflag='0'
+  <!-- 非月度表现 -->
+   union 
+ select b.AcctBsSgmtSeqNo REPORTMODID,b.Name,b.IDType,b.IDNum,b.INFRECTYPE,b.RPTDATE from pbcrs_report_AcctBsSgmt b
+inner join  PBCRS_REPORT_ACCTDBTINFSGMTm m on b.ACCTBSSGMTSEQNO = m.ACCTDBTINFSGMTSEQNO
+ where b.reportflag='0' and m.reportflag='0'
+ union
+<!--授信基础段 --> 
+  select b.CtrctBsSgmtSeqNo REPORTMODID,b.Name,b.IDType,b.IDNum,b.INFRECTYPE,b.RPTDATE from PBCRS_REPORT_CTRCTBSSGMT b
+  inner join  PBCRS_REPORT_CTRCTBSSGMTm  m on b.CTRCTBSSGMTSEQNO=m.CTRCTBSSGMTSEQNO
+  where b.reportflag='0' and m.reportflag='0'
+  union 
+  <!--授信基本信息段  -->
+  select b.CtrctBsSgmtSeqNo REPORTMODID,b.Name,b.IDType,b.IDNum,b.INFRECTYPE,b.RPTDATE from PBCRS_REPORT_CTRCTBSSGMT b
+  inner join PBCRS_REPORT_CREDITLIMSGMTm m on b.CTRCTBSSGMTSEQNO=m.CREDITLIMSGMTSEQNO
+  where b.reportflag='0' and m.reportflag='0'
+  union
+  <!--  个人授信协议额度信息段-->
+   select b.CtrctBsSgmtSeqNo REPORTMODID,b.Name,b.IDType,b.IDNum,b.INFRECTYPE,b.RPTDATE from PBCRS_REPORT_CTRCTBSSGMT b
+  inner join PBCRS_REPORT_CREDITLIMSGMTm m on b.CTRCTBSSGMTSEQNO=m.CREDITLIMSGMTSEQNO
+  where b.reportflag='0' and m.reportflag='0'
+  
+  union 
+  
+  select b.MotgaCltalCtrctBsSgmtSeqNo REPORTMODID,b.name,b.CertType,b.CertNum,b.InfRecType,b.RPTDATE　from PBCRS_REPORT_MotCltCtrBsSgmt b
+  inner join PBCRS_REPORT_MotCltCtrBsSgmtm m on b.MotgaCltalCtrctBsSgmtSeqNo=m.MotgaCltalCtrctBsSgmtSeqNo
+  where b.reportflag='0' and m.reportflag='0' and b.rptdatecode !='30' and b.sourcesys in ('PLN','ILN','SLNIND')
+  ) o order by rptdate desc
+)A where rownum  &lt;=${endindex}
+<include refid="sql_selectInCondition"></include>
+
+) where Rn &gt;${startindex}
+
+</select> 
+
+<sql id="sql_selectInUpdCondition">
+	<if test="queryIDName != null and queryIDName != ''">
+			and NAME like '%' || #{queryIDName} ||'%' 
+	</if>   
+	 <if test="queryIDNum != null and queryIDNum != ''">
+			and IDNUM like '%' || #{queryIDNum} ||'%' 
+	</if>  
+	 <if test="queryRptDate != null and queryRptDate != ''">
+			and rptdate = #{queryRptDate}
+	</if>   
+	<if test="queryRptType !=null and queryRptType !=''">
+    	and InfRecType = #{queryRptType}
+    </if>
+		
+</sql>
+<select id="selectUpdSubListPage" resultType="map" parameterType="map">
+	select * from (
+select A.*,rownum Rn from (
+select * from (
+	<!-- 基本信息 -->
+select b.BSSGMTSEQNO REPORTMODID,b.NAME,b.IDTYPE,b.IDNUM, b.INFRECTYPE, b.rptdate RPTDATE
+ from pbcrs_report_BsSgmtm  m
+ inner join pbcrs_report_BsSgmt b
+ on m.bssgmtseqno = b.bssgmtseqno
+ where   m.reportflag='0'  and b.RPTDATECODE='20'
+union 
+<!-- 借贷 -->
+ select distinct b.AcctBsSgmtSeqNo REPORTMODID,b.Name,b.IDType,b.IDNum,m.infrectype,to_char(m.etl_date,'yyyy-mm-dd') from pbcrs_report_InAcctMdfcBsSgmt m 
+inner join pbcrs_report_AcctBsSgmt b on b.acctbssgmtseqno = m.bssgmtseqno
+where m.reportflag='0'
+ union
+<!--  授信 -->
+ select distinct b.CtrctBsSgmtSeqNo REPORTMODID,b.Name,b.IDType,b.IDNum,m.infrectype,to_char(m.etl_date,'yyyy-mm-dd')  from pbcrs_report_InCtrctMdfcBsSgmt m
+ inner join PBCRS_REPORT_CTRCTBSSGMT  b on  b.ctrctbssgmtseqno = m.bssgmtseqno
+ where m.reportflag='0'
+  union 
+<!--   抵质押 -->
+  select b.MotgaCltalCtrctBsSgmtSeqNo REPORTMODID,b.name,b.CertType,b.CertNum,b.InfRecType,b.rptdate　from PBCRS_REPORT_MotCltCtrBsSgmt b
+  inner join PBCRS_REPORT_MotCltCtrBsSgmtm m on b.MotgaCltalCtrctBsSgmtSeqNo=m.MotgaCltalCtrctBsSgmtSeqNo
+  where   m.reportflag='0' and b.rptdatecode ='30' and b.sourcesys in ('PLN','ILN','SLNIND')
+  
+    <!-- 借贷标识变更 -->
+  union all
+  select distinct b.AcctBsSgmtSeqNo REPORTMODID,b.Name,b.IDType,b.IDNum,m.infrectype,to_char(m.etl_date,'yyyy-mm-dd') from pbcrs_report_InAcctIDCagsInf m 
+inner join pbcrs_report_AcctBsSgmt b on b.acctbssgmtseqno = m.INACCTIDCAGSINFSEQNO
+where m.reportflag='0'
+
+<!-- 授信标识变更 -->
+union all 
+select distinct b.CtrctBsSgmtSeqNo REPORTMODID,b.Name,b.IDType,b.IDNum,m.infrectype,to_char(m.etl_date,'yyyy-mm-dd')  from pbcrs_report_InCtrctIDCagsInf m
+ inner join PBCRS_REPORT_CTRCTBSSGMT  b on  b.ctrctbssgmtseqno = m.INCTRCTIDCAGSINFSEQNO
+ where m.reportflag='0'
+
+<!-- 抵质押物标识变更 -->
+union all
+select b.MotgaCltalCtrctBsSgmtSeqNo REPORTMODID,b.name,b.CertType,b.CertNum,m.InfRecType,b.rptdate　from PBCRS_REPORT_MotCltCtrBsSgmt b
+inner join pbcrs_report_MoCIDCagsInf m on b.MOTGACLTALCTRCTBSSGMTSEQNO = m.MOCIDCAGSINFSEQNO
+where   m.reportflag='0' and b.rptdatecode ='30' and b.sourcesys in ('PLN','ILN','SLNIND')
+  ) o order by rptdate desc
+)A where rownum  &lt;=${endindex}
+<include refid="sql_selectInUpdCondition"></include>
+
+) where Rn &gt;${startindex}
+
+</select> 
+
+<select id="selectUpdSubListCount" resultType="int" parameterType="map">
+select count(1) from (
+	<!-- 基本信息 -->
+select b.BSSGMTSEQNO REPORTMODID,b.NAME,b.IDTYPE,b.IDNUM, b.INFRECTYPE, b.rptdate RPTDATE
+ from pbcrs_report_BsSgmtm  m
+ inner join pbcrs_report_BsSgmt b
+ on m.bssgmtseqno = b.bssgmtseqno
+ where   m.reportflag='0'  and b.RPTDATECODE='20'
+union 
+<!-- 借贷 -->
+ select distinct b.AcctBsSgmtSeqNo REPORTMODID,b.Name,b.IDType,b.IDNum,m.infrectype,to_char(m.etl_date,'yyyy-mm-dd') from pbcrs_report_InAcctMdfcBsSgmt m 
+inner join pbcrs_report_AcctBsSgmt b on b.acctbssgmtseqno = m.bssgmtseqno
+where m.reportflag='0'
+ union
+<!--  授信 -->
+ select distinct b.CtrctBsSgmtSeqNo REPORTMODID,b.Name,b.IDType,b.IDNum,m.infrectype,to_char(m.etl_date,'yyyy-mm-dd')  from pbcrs_report_InCtrctMdfcBsSgmt m
+ inner join PBCRS_REPORT_CTRCTBSSGMT  b on  b.ctrctbssgmtseqno = m.bssgmtseqno
+ where m.reportflag='0'
+  union 
+<!--   抵质押 -->
+  select b.MotgaCltalCtrctBsSgmtSeqNo REPORTMODID,b.name,b.CertType,b.CertNum,b.InfRecType,b.rptdate　from PBCRS_REPORT_MotCltCtrBsSgmt b
+  inner join PBCRS_REPORT_MotCltCtrBsSgmtm m on b.MotgaCltalCtrctBsSgmtSeqNo=m.MotgaCltalCtrctBsSgmtSeqNo
+  where   m.reportflag='0' and b.rptdatecode ='30' and b.sourcesys in ('PLN','ILN','SLNIND')
+  
+    <!-- 借贷标识变更 -->
+  union all
+  select distinct b.AcctBsSgmtSeqNo REPORTMODID,b.Name,b.IDType,b.IDNum,m.infrectype,to_char(m.etl_date,'yyyy-mm-dd') from pbcrs_report_InAcctIDCagsInf m 
+inner join pbcrs_report_AcctBsSgmt b on b.acctbssgmtseqno = m.INACCTIDCAGSINFSEQNO
+where m.reportflag='0'
+
+<!-- 授信标识变更 -->
+union all 
+select distinct b.CtrctBsSgmtSeqNo REPORTMODID,b.Name,b.IDType,b.IDNum,m.infrectype,to_char(m.etl_date,'yyyy-mm-dd')  from pbcrs_report_InCtrctIDCagsInf m
+ inner join PBCRS_REPORT_CTRCTBSSGMT  b on  b.ctrctbssgmtseqno = m.INCTRCTIDCAGSINFSEQNO
+ where m.reportflag='0'
+
+<!-- 抵质押物标识变更 -->
+union all
+select b.MotgaCltalCtrctBsSgmtSeqNo REPORTMODID,b.name,b.CertType,b.CertNum,m.InfRecType,b.rptdate　from PBCRS_REPORT_MotCltCtrBsSgmt b
+inner join pbcrs_report_MoCIDCagsInf m on b.MOTGACLTALCTRCTBSSGMTSEQNO = m.MOCIDCAGSINFSEQNO
+where   m.reportflag='0' and b.rptdatecode ='30' and b.sourcesys in ('PLN','ILN','SLNIND')
+) A where 1 = 1
+<include refid="sql_selectInUpdCondition"></include>
+</select> 
+
+<sql id="sql_selectDeleteInCondition">
+	 <if test="queryIDName != null and queryIDName != ''">
+			and NAME like '%'|| #{queryIDName} ||'%'
+	</if>   
+	 <if test="queryIDNum != null and queryIDNum != ''">
+			and IDNUM like '%'|| #{queryIDNum} ||'%'
+	</if>  
+	 <if test="queryRptDate != null and queryRptDate != ''">
+			and rptdate = #{queryRptDate}
+	</if>   
+	<if test="queryRptType !=null and queryRptType !=''">
+    	and InfRecType = #{queryRptType}
+    </if>
+		
+</sql>
+<select id="selectDeleteInListPage" resultType="map" parameterType="map">
+select * from (
+select A.*,rownum Rn from (
+ select * from (
+ select INBSINFDLTSEQNO ReportModId,NAME,IDTYPE,IDNUM,INFRECTYPE,to_char(ETL_DATE,'yyyy-mm-dd') rptdate
+  from pbcrs_report_InBsInfDlt
+ where REPORTFLAG='0'
+ union all
+  select l.inacctentdelseqno,b.name,b.idtype,b.idnum,l.infrectype,to_char(l.ETL_DATE,'yyyy-mm-dd') rptdate
+  from pbcrs_report_InAcctEntDel l
+  inner join pbcrs_report_AcctBsSgmt b on b.AcctBsSgmtSeqNo=l.inacctentdelseqno
+ where l.REPORTFLAG='0'
+ 
+ union all
+ 
+  select l.INCTRCTENTDELSEQNO,b.name,b.idtype,b.idnum,l.infrectype,to_char(l.ETL_DATE,'yyyy-mm-dd') rptdate
+  from pbcrs_report_InCtrctEntDel l
+  inner join pbcrs_report_CtrctBsSgmt b on b.CTRCTBSSGMTSEQNO = l.INCTRCTENTDELSEQNO
+  where l.reportflag='0'
+  
+ union all
+  select l.MOCENTDELSEQNO,b.name,b.CertType,b.CertNum,l.infrectype,to_char(l.ETL_DATE,'yyyy-mm-dd') rptdate
+   from   pbcrs_report_MoCEntDel l
+ inner join pbcrs_report_MotCltCtrBsSgmt b on b.MotgaCltalCtrctBsSgmtSeqNo = l.MOCENTDELSEQNO
+ where l.SOURCESYS in ('PLN','ILN','SLNINT') and l.reportflag='0'
+ ) o order by rptdate desc
+)A where rownum  &lt;=${endindex}
+<include refid="sql_selectDeleteInCondition"></include>
+
+) where Rn &gt;${startindex}
+
+</select> 
+  
+  <select id="selectDeleteInListCount" resultType="int" parameterType="map">
+select count(1) from (
+ select INBSINFDLTSEQNO,NAME,IDTYPE,IDNUM,INFRECTYPE,to_char(ETL_DATE,'yyyy-mm-dd') rptdate
+  from pbcrs_report_InBsInfDlt
+ where REPORTFLAG='0'
+ union all
+  select l.inacctentdelseqno,b.name,b.idtype,b.idnum,l.infrectype,to_char(l.ETL_DATE,'yyyy-mm-dd') rptdate
+  from pbcrs_report_InAcctEntDel l
+  inner join pbcrs_report_AcctBsSgmt b on b.AcctBsSgmtSeqNo=l.inacctentdelseqno
+ where l.REPORTFLAG='0'
+ 
+ union all
+ 
+  select l.INCTRCTENTDELSEQNO,b.name,b.idtype,b.idnum,l.infrectype,to_char(l.ETL_DATE,'yyyy-mm-dd') rptdate
+  from pbcrs_report_InCtrctEntDel l
+  inner join pbcrs_report_CtrctBsSgmt b on b.CTRCTBSSGMTSEQNO = l.INCTRCTENTDELSEQNO
+  where l.reportflag='0'
+  
+ union all
+  select l.MOCENTDELSEQNO,b.name,b.CertType,b.CertNum,l.infrectype,to_char(l.ETL_DATE,'yyyy-mm-dd') rptdate
+   from   pbcrs_report_MoCEntDel l
+ inner join pbcrs_report_MotCltCtrBsSgmt b on b.MotgaCltalCtrctBsSgmtSeqNo = l.MOCENTDELSEQNO
+ where l.SOURCESYS in ('PLN','ILN','SLNINT') and l.reportflag='0'
+) A where 1 = 1
+<include refid="sql_selectDeleteInCondition"></include>
+</select> 
+  
+  
+  
+    <select id="selectAllbyContCountDel" resultType="int" parameterType="map">
+SELECT count(1) from ( 
+select eb.ENBSINFDLTSEQNO ReportModId,eb.InfRecType InfRecType,eb.EntName entName,eb.EntCertType entCertType,eb.entcertnum entCertNum,to_char(eb.etl_date,'yyyy-mm-dd') rptDate from PBCRS_REPORT_ENBSINFDLT eb where eb.reportflag='0'
+union
+select es.BALANCESHEETDLTSEQNO ReportModId,es.infrectype InfRecType,es.entname entName,es.entcerttype entCertType,es.entcertnum entCertNum,to_char(es.etl_date,'yyyy-mm-dd') rptDate from PBCRS_REPORT_BALANCESHEETDLT es where es.reportflag='0'
+union
+select ei.INCSTAPROAPPDLTSEQNO ReportModId,ei.infrectype InfRecType,ei.entname entName,ei.entcerttype entCertType,ei.entcertnum entCertNum,to_char(ei.etl_date,'yyyy-mm-dd') rptDate from PBCRS_REPORT_INCSTAPROAPPDLT ei where ei.reportflag='0'
+union
+select ec.CASHFLOWSDLTSEQNO ReportModId,ec.infrectype InfRecType,ec.entname entName,ec.entcerttype entCertType,ec.entcertnum entCertNum,to_char(ec.etl_date,'yyyy-mm-dd') rptdate from PBCRS_REPORT_CASHFLOWSDLT ec where ec.reportflag='0'
+union
+select esi.INSBALSHEDLTSEQNO ReportModId,esi.infrectype InfRecType,esi.entname entName,esi.entcerttype entCertType,esi.entcertnum entCertNum,to_char(esi.etl_date,'yyyy-mm-dd') rptDate from PBCRS_REPORT_INSBALSHEDLT esi where esi.reportflag='0'
+union
+select eim.INCANDEXPSTADLTSEQNO ReportModId,eim.infrectype InfRecType,eim.entname entName,eim.entcerttype entCertType,eim.entcertnum entCertNum,to_char(eim.etl_date,'yyyy-mm-dd') rptDate from PBCRS_REPORT_INCANDEXPSTADLT eim where eim.reportflag='0'
+union
+select em.MOCENTDELSEQNO ReportModId,em.infrectype InfRecType,emct.name entName,emct.certtype entCertType,emct.certnum entCertNum,to_char(em.etl_date,'yyyy-mm-dd') rptDate from PBCRS_REPORT_MOCENTDEL em 
+inner join PBCRS_REPORT_MOTCLTCTRBSSGMT emct on em.MOCENTDELSEQNO = emct.MOTGACLTALCTRCTBSSGMTSEQNO
+where em.reportflag='0' and em.sourcesys in('MIS','SLNENT','CRMS')
+union
+select ectr.ENCTRCTINFENTDELSEQNO ReportModId,ectr.infrectype InfRecType,enctrc.name entName,enctrc.IDTYPE entCertType,enctrc.IDNUM entCertNum,to_char(ectr.etl_date,'yyyy-mm-dd') rptDate
+from PBCRS_REPORT_ENCTRCTINFENTDEL ectr inner join PBCRS_REPORT_ENCTRCTBSSGMT enctrc on ectr.ENCTRCTINFENTDELSEQNO=enctrc.CtrctBsSgmtSeqNo where ectr.reportflag='0'
+union
+select eacc.ENACCTINFENTDELSEQNO ReportModId,eacc.infrectype InfRecType,enacc.name entName,enacc.IDType entCertType,enacc.IDNum entCertNum,to_char(eacc.etl_date,'yyyy-mm-dd') rptDate
+from PBCRS_REPORT_ENACCTINFENTDEL eacc inner join PBCRS_REPORT_ENACCTBSSGMT enacc on eacc.ENACCTINFENTDELSEQNO=enacc.AcctBsSgmtSeqNo where eacc.reportflag='0'
+union
+select esec.ENSECACCTENTDELSGMTSEQNO ReportModId,esec.infrectype InfRecType,enguar.name entName,enguar.IDType entCertType,enguar.IDNum entCertNum,to_char(esec.etl_date,'yyyy-mm-dd') rptDate
+from PBCRS_REPORT_ENSECACCDELSGMT esec inner join PBCRS_REPORT_ENGUARACCTBSSGMT enguar on esec.ENSECACCTENTDELSGMTSEQNO=enguar.GuarAcctBsSgmtSeqNo  where esec.reportflag='0'
+) A where 1=1 
+<include refid="sql_selectCont"></include>
+  </select>
+  
+<select id="selectAllbyContPageDel" resultType="map" parameterType="map"> 
+    select * from (
+	    SELECT A.*, ROWNUM RN  from ( 
+select eb.ENBSINFDLTSEQNO ReportModId,eb.InfRecType InfRecType,eb.EntName entName,eb.EntCertType entCertType,eb.entcertnum entCertNum,to_char(eb.etl_date,'yyyy-mm-dd') rptDate from PBCRS_REPORT_ENBSINFDLT eb where eb.reportflag='0'
+union
+select es.BALANCESHEETDLTSEQNO ReportModId,es.infrectype InfRecType,es.entname entName,es.entcerttype entCertType,es.entcertnum entCertNum,to_char(es.etl_date,'yyyy-mm-dd') rptDate from PBCRS_REPORT_BALANCESHEETDLT es where es.reportflag='0'
+union
+select ei.INCSTAPROAPPDLTSEQNO ReportModId,ei.infrectype InfRecType,ei.entname entName,ei.entcerttype entCertType,ei.entcertnum entCertNum,to_char(ei.etl_date,'yyyy-mm-dd') rptDate from PBCRS_REPORT_INCSTAPROAPPDLT ei where ei.reportflag='0'
+union
+select ec.CASHFLOWSDLTSEQNO ReportModId,ec.infrectype InfRecType,ec.entname entName,ec.entcerttype entCertType,ec.entcertnum entCertNum,to_char(ec.etl_date,'yyyy-mm-dd') rptdate from PBCRS_REPORT_CASHFLOWSDLT ec where ec.reportflag='0'
+union
+select esi.INSBALSHEDLTSEQNO ReportModId,esi.infrectype InfRecType,esi.entname entName,esi.entcerttype entCertType,esi.entcertnum entCertNum,to_char(esi.etl_date,'yyyy-mm-dd') rptDate from PBCRS_REPORT_INSBALSHEDLT esi where esi.reportflag='0'
+union
+select eim.INCANDEXPSTADLTSEQNO ReportModId,eim.infrectype InfRecType,eim.entname entName,eim.entcerttype entCertType,eim.entcertnum entCertNum,to_char(eim.etl_date,'yyyy-mm-dd') rptDate from PBCRS_REPORT_INCANDEXPSTADLT eim where eim.reportflag='0'
+union
+select em.MOCENTDELSEQNO ReportModId,em.infrectype InfRecType,emct.name entName,emct.certtype entCertType,emct.certnum entCertNum,to_char(em.etl_date,'yyyy-mm-dd') rptDate from PBCRS_REPORT_MOCENTDEL em 
+inner join PBCRS_REPORT_MOTCLTCTRBSSGMT emct on em.MOCENTDELSEQNO = emct.MOTGACLTALCTRCTBSSGMTSEQNO
+where em.reportflag='0' and em.sourcesys in('MIS','SLNENT','CRMS')
+union
+select ectr.ENCTRCTINFENTDELSEQNO ReportModId,ectr.infrectype InfRecType,enctrc.name entName,enctrc.IDTYPE entCertType,enctrc.IDNUM entCertNum,to_char(ectr.etl_date,'yyyy-mm-dd') rptDate
+from PBCRS_REPORT_ENCTRCTINFENTDEL ectr inner join PBCRS_REPORT_ENCTRCTBSSGMT enctrc on ectr.ENCTRCTINFENTDELSEQNO=enctrc.CtrctBsSgmtSeqNo where ectr.reportflag='0'
+union
+select eacc.ENACCTINFENTDELSEQNO ReportModId,eacc.infrectype InfRecType,enacc.name entName,enacc.IDType entCertType,enacc.IDNum entCertNum,to_char(eacc.etl_date,'yyyy-mm-dd') rptDate
+from PBCRS_REPORT_ENACCTINFENTDEL eacc inner join PBCRS_REPORT_ENACCTBSSGMT enacc on eacc.ENACCTINFENTDELSEQNO=enacc.AcctBsSgmtSeqNo where eacc.reportflag='0'
+union
+select esec.ENSECACCTENTDELSGMTSEQNO ReportModId,esec.infrectype InfRecType,enguar.name entName,enguar.IDType entCertType,enguar.IDNum entCertNum,to_char(esec.etl_date,'yyyy-mm-dd') rptDate
+from PBCRS_REPORT_ENSECACCDELSGMT esec inner join PBCRS_REPORT_ENGUARACCTBSSGMT enguar on esec.ENSECACCTENTDELSGMTSEQNO=enguar.GuarAcctBsSgmtSeqNo  where esec.reportflag='0'
+) A
+	  	WHERE ROWNUM &lt;=${endindex}
+	  	<include refid="sql_selectCont"></include>
+	  	order by A.rptDate desc,rownum
+  	) where RN &gt;${startindex}
+  </select>
+  
+  
+  
+  
+  
+  
+  
+  
+    <select id="selectAllbyContCountUpdSub" resultType="int" parameterType="map">
+SELECT count(1) from ( 
+select ebase.BsSgmtSeqNo ReportModId,ebase.InfRecType InfRecType,ebase.EntName entName,ebase.EntCertType entCertType,ebase.entcertnum entCertNum,ebase.RPTDATE rptDate<!-- ,nvl((select reportStaut from pbcrs_report_condition where CONDITIONSEQNO like '%'||eb.BsSgmtSeqNo||'%'),'0') reportStaut --> 
+from PBCRS_REPORT_ENBASINFBSSGMTM eb inner join PBCRS_REPORT_ENBASINFBSSGMT ebase on eb.BsSgmtSeqNo = ebase.BsSgmtSeqNo  where eb.reportflag='0' and ebase.reportflag='0' and ebase.RPTDATECODE='20'
+union
+select bs.balancesheetbssgmtseqno ReportModId,bs.infrectype InfRecType,bs.entname entName,bs.entcerttype entCertType,bs.entcertnum entCertNum,bs.rptdate rptDate<!-- ,nvl((select reportStaut from pbcrs_report_condition where CONDITIONSEQNO like '%'||es.balancesheetbssgmtseqno||'%'),'0') reportStaut --> 
+from PBCRS_REPORT_BALANCESHEETBSSG2 es inner join PBCRS_REPORT_BALANCESHEETBSSGM bs on es.balancesheetbssgmtseqno = bs.balancesheetbssgmtseqno where es.reportflag='0' and bs.reportflag='0' and bs.RPTDATECODE='20'
+union
+select eic.incomestatementpabssgmtseqno ReportModId,eic.infrectype InfRecType,eic.entname entName,eic.entcerttype entCertType,eic.entcertnum entCertNum,eic.rptdate rptDate<!-- ,nvl((select reportStaut from pbcrs_report_condition where CONDITIONSEQNO like '%'||ei.incomestatementpabssgmtseqno||'%'),'0') reportStaut --> 
+from PBCRS_REPORT_INCOMESBSSGMTM ei inner join PBCRS_REPORT_INCOMESBSSGMT eic on ei.incomestatementpabssgmtseqno = eic.incomestatementpabssgmtseqno where ei.reportflag='0' and eic.reportflag='0' and eic.RPTDATECODE='20'
+union
+select eca.cashflowsbssgmtseqno ReportModId,eca.infrectype InfRecType,eca.entname entName,eca.entcerttype entCertType,eca.entcertnum entCertNum,eca.rptdate rptDate<!-- ,nvl((select reportStaut from pbcrs_report_condition where CONDITIONSEQNO like '%'||ec.cashflowsbssgmtseqno||'%'),'0') reportStaut -->
+from PBCRS_REPORT_CASHFLOWSBSSGMTM ec inner join PBCRS_REPORT_CASHFLOWSBSSGMT eca on ec.cashflowsbssgmtseqno = eca.cashflowsbssgmtseqno    where ec.reportflag='0' and eca.reportflag='0' and eca.RPTDATECODE='20'
+union
+select esin.institutionbsbssgmtseqno ReportModId,esin.infrectype InfRecType,esin.entname entName,esin.entcerttype entCertType,esin.entcertnum entCertNum,esin.rptdate rptDate<!-- ,nvl((select reportStaut from pbcrs_report_condition where CONDITIONSEQNO like '%'||esi.institutionbsbssgmtseqno||'%'),'0') reportStaut --> 
+from PBCRS_REPORT_INSBALSHEBSSGMTM esi inner join PBCRS_REPORT_INSBALSHEBSSGMT esin on esi.institutionbsbssgmtseqno = esin.institutionbsbssgmtseqno where esi.reportflag='0' and esin.reportflag='0' and esin.RPTDATECODE='20'
+union
+select eimn.incomeandesbssgmtseqno ReportModId,eimn.infrectype InfRecType,eimn.entname entName,eimn.entcerttype entCertType,eimn.entcertnum entCertNum,eimn.rptdate rptDate<!-- ,nvl((select reportStaut from pbcrs_report_condition where CONDITIONSEQNO like '%'||eim.incomeandesbssgmtseqno||'%'),'0') reportStaut --> 
+from PBCRS_REPORT_INCANDEXPSTBSSGMM eim inner join PBCRS_REPORT_INCANDEXPSTBSSGMT eimn on eim.incomeandesbssgmtseqno = eimn.incomeandesbssgmtseqno  where eim.reportflag='0' and eimn.reportflag='0' and eimn.RPTDATECODE='20'
+union
+select emm.motgacltalctrctbssgmtseqno ReportModId,emm.infrectype InfRecType,emm.name entName,emm.certtype entCertType,emm.certnum entCertNum,emm.rptdate rptDate<!-- ,nvl((select reportStaut from pbcrs_report_condition where CONDITIONSEQNO like '%'||em.motgacltalctrctbssgmtseqno||'%'),'0') reportStaut --> 
+from PBCRS_REPORT_MOTCLTCTRBSSGMTM em inner join PBCRS_REPORT_MOTCLTCTRBSSGMT emm on em.motgacltalctrctbssgmtseqno = emm.motgacltalctrctbssgmtseqno and emm.sourcesys in('MIS','SLNENT','CRMS') where em.reportflag='0' and em.sourcesys in('MIS','SLNENT','CRMS') and emm.reportflag='0' and emm.RPTDATECODE='30'
+
+union
+select ectr.enctrctinfmdfcseqno ReportModId,ectr.infrectype InfRecType,enctrc.name entName,enctrc.IDTYPE entCertType,enctrc.IDNUM entCertNum,ectr.rptdate rptDate<!-- ,nvl((select reportStaut from pbcrs_report_condition where CONDITIONSEQNO like '%'||ectr.enctrctinfmdfcseqno||'%'),'0') reportStaut --> 
+from PBCRS_REPORT_ENCTRINFMDFBSSGMT ectr inner join PBCRS_REPORT_ENCTRCTBSSGMT enctrc on ectr.enctrctinfmdfcseqno=enctrc.CtrctBsSgmtSeqNo where ectr.reportflag='0'
+union
+select eacc.bssgmtseqno ReportModId,eacc.infrectype InfRecType,enacc.name entName,enacc.IDType entCertType,enacc.IDNum entCertNum,eacc.rptdate rptDate<!-- ,nvl((select reportStaut from pbcrs_report_condition where CONDITIONSEQNO like '%'||eacc.bssgmtseqno||'%'),'0') reportStaut  -->
+from PBCRS_REPORT_ENACCINFMDFBSSGMT eacc inner join PBCRS_REPORT_ENACCTBSSGMT enacc on eacc.bssgmtseqno=enacc.AcctBsSgmtSeqNo where eacc.reportflag='0'
+union
+select esec.bssgmtseqno ReportModId,esec.infrectype InfRecType,enguar.name entName,enguar.IDType entCertType,enguar.IDNum entCertNum,esec.rptdate rptDate<!-- ,nvl((select reportStaut from pbcrs_report_condition where CONDITIONSEQNO like '%'||esec.bssgmtseqno||'%'),'0') reportStaut --> 
+from PBCRS_REPORT_ENSECACCMDFBSSGMT esec inner join PBCRS_REPORT_ENGUARACCTBSSGMT enguar on esec.bssgmtseqno=enguar.GuarAcctBsSgmtSeqNo  where esec.reportflag='0'
+<!-- 授信标识变更 -->
+union
+select ectr.ENCTRCTINFIDCAGSINFSEQNO ReportModId,ectr.infrectype InfRecType,enctrc.name entName,enctrc.IDTYPE entCertType,enctrc.IDNUM entCertNum,to_char(ectr.etl_date,'yyyy-mm-dd') rptDate<!-- ,nvl((select reportStaut from pbcrs_report_condition where CONDITIONSEQNO like '%'||ectr.enctrctinfmdfcseqno||'%'),'0') reportStaut --> 
+from pbcrs_report_enctrctinfidcagsi ectr inner join PBCRS_REPORT_ENCTRCTBSSGMT enctrc on ectr.ENCTRCTINFIDCAGSINFSEQNO=enctrc.CtrctBsSgmtSeqNo where ectr.reportflag='0'
+<!-- 借贷标识变更 -->
+union
+select eacc.ENACCTINFIDCAGSINFSEQNO ReportModId,eacc.infrectype InfRecType,enacc.name entName,enacc.IDType entCertType,enacc.IDNum entCertNum,to_char(eacc.etl_date,'yyyy-mm-dd') rptDate<!-- ,nvl((select reportStaut from pbcrs_report_condition where CONDITIONSEQNO like '%'||eacc.bssgmtseqno||'%'),'0') reportStaut  -->
+from PBCRS_REPORT_ENACCINFIDCAGINF eacc inner join PBCRS_REPORT_ENACCTBSSGMT enacc on eacc.ENACCTINFIDCAGSINFSEQNO=enacc.AcctBsSgmtSeqNo where eacc.reportflag='0'
+<!-- 担保标识变更 -->
+union
+select esec.ENSECACCTIDCAGSINFSEQNO ReportModId,esec.infrectype InfRecType,enguar.name entName,enguar.IDType entCertType,enguar.IDNum entCertNum,to_char(esec.etl_date,'yyyy-mm-dd') rptDate<!-- ,nvl((select reportStaut from pbcrs_report_condition where CONDITIONSEQNO like '%'||esec.bssgmtseqno||'%'),'0') reportStaut --> 
+from PBCRS_REPORT_ENSECACCIDCAGINF esec inner join PBCRS_REPORT_ENGUARACCTBSSGMT enguar on esec.ENSECACCTIDCAGSINFSEQNO=enguar.GuarAcctBsSgmtSeqNo  where esec.reportflag='0'
+<!-- 抵质押标识变更 -->
+union
+select em.MOCIDCAGSINFSEQNO ReportModId,emm.infrectype InfRecType,emm.name entName,emm.certtype entCertType,emm.certnum entCertNum,to_char(em.etl_date,'yyyy-mm-dd') rptDate<!-- ,nvl((select reportStaut from pbcrs_report_condition where CONDITIONSEQNO like '%'||em.motgacltalctrctbssgmtseqno||'%'),'0') reportStaut --> 
+from PBCRS_REPORT_MOCIDCAGSINF em inner join PBCRS_REPORT_MOTCLTCTRBSSGMT emm on em.MOCIDCAGSINFSEQNO = emm.motgacltalctrctbssgmtseqno and emm.sourcesys in('MIS','SLNENT','CRMS') where em.reportflag='0' and em.sourcesys in('MIS','SLNENT','CRMS') and emm.reportflag='0' and emm.RPTDATECODE='30'
+
+) A where 1=1 
+<include refid="sql_selectCont"></include>
+  </select>
+  
+<select id="selectAllbyContPageUpdSub" resultType="map" parameterType="map"> 
+    select * from (
+	    SELECT A.*, ROWNUM RN  from ( 
+select ebase.BsSgmtSeqNo ReportModId,ebase.InfRecType InfRecType,ebase.EntName entName,ebase.EntCertType entCertType,ebase.entcertnum entCertNum,ebase.RPTDATE rptDate<!-- ,nvl((select reportStaut from pbcrs_report_condition where CONDITIONSEQNO like '%'||eb.BsSgmtSeqNo||'%'),'0') reportStaut --> 
+from PBCRS_REPORT_ENBASINFBSSGMTM eb inner join PBCRS_REPORT_ENBASINFBSSGMT ebase on eb.BsSgmtSeqNo = ebase.BsSgmtSeqNo  where eb.reportflag='0' and ebase.reportflag='0' and ebase.RPTDATECODE='20'
+union
+select bs.balancesheetbssgmtseqno ReportModId,bs.infrectype InfRecType,bs.entname entName,bs.entcerttype entCertType,bs.entcertnum entCertNum,bs.rptdate rptDate<!-- ,nvl((select reportStaut from pbcrs_report_condition where CONDITIONSEQNO like '%'||es.balancesheetbssgmtseqno||'%'),'0') reportStaut --> 
+from PBCRS_REPORT_BALANCESHEETBSSG2 es inner join PBCRS_REPORT_BALANCESHEETBSSGM bs on es.balancesheetbssgmtseqno = bs.balancesheetbssgmtseqno where es.reportflag='0' and bs.reportflag='0' and bs.RPTDATECODE='20'
+union
+select eic.incomestatementpabssgmtseqno ReportModId,eic.infrectype InfRecType,eic.entname entName,eic.entcerttype entCertType,eic.entcertnum entCertNum,eic.rptdate rptDate<!-- ,nvl((select reportStaut from pbcrs_report_condition where CONDITIONSEQNO like '%'||ei.incomestatementpabssgmtseqno||'%'),'0') reportStaut --> 
+from PBCRS_REPORT_INCOMESBSSGMTM ei inner join PBCRS_REPORT_INCOMESBSSGMT eic on ei.incomestatementpabssgmtseqno = eic.incomestatementpabssgmtseqno where ei.reportflag='0' and eic.reportflag='0' and eic.RPTDATECODE='20'
+union
+select eca.cashflowsbssgmtseqno ReportModId,eca.infrectype InfRecType,eca.entname entName,eca.entcerttype entCertType,eca.entcertnum entCertNum,eca.rptdate rptDate<!-- ,nvl((select reportStaut from pbcrs_report_condition where CONDITIONSEQNO like '%'||ec.cashflowsbssgmtseqno||'%'),'0') reportStaut -->
+from PBCRS_REPORT_CASHFLOWSBSSGMTM ec inner join PBCRS_REPORT_CASHFLOWSBSSGMT eca on ec.cashflowsbssgmtseqno = eca.cashflowsbssgmtseqno    where ec.reportflag='0' and eca.reportflag='0' and eca.RPTDATECODE='20'
+union
+select esin.institutionbsbssgmtseqno ReportModId,esin.infrectype InfRecType,esin.entname entName,esin.entcerttype entCertType,esin.entcertnum entCertNum,esin.rptdate rptDate<!-- ,nvl((select reportStaut from pbcrs_report_condition where CONDITIONSEQNO like '%'||esi.institutionbsbssgmtseqno||'%'),'0') reportStaut --> 
+from PBCRS_REPORT_INSBALSHEBSSGMTM esi inner join PBCRS_REPORT_INSBALSHEBSSGMT esin on esi.institutionbsbssgmtseqno = esin.institutionbsbssgmtseqno where esi.reportflag='0' and esi.reportflag='0' and esin.RPTDATECODE='20'
+union
+select eimn.incomeandesbssgmtseqno ReportModId,eimn.infrectype InfRecType,eimn.entname entName,eimn.entcerttype entCertType,eimn.entcertnum entCertNum,eimn.rptdate rptDate<!-- ,nvl((select reportStaut from pbcrs_report_condition where CONDITIONSEQNO like '%'||eim.incomeandesbssgmtseqno||'%'),'0') reportStaut --> 
+from PBCRS_REPORT_INCANDEXPSTBSSGMM eim inner join PBCRS_REPORT_INCANDEXPSTBSSGMT eimn on eim.incomeandesbssgmtseqno = eimn.incomeandesbssgmtseqno  where eim.reportflag='0' and eimn.reportflag='0' and eimn.RPTDATECODE='20'
+union
+select emm.motgacltalctrctbssgmtseqno ReportModId,emm.infrectype InfRecType,emm.name entName,emm.certtype entCertType,emm.certnum entCertNum,emm.rptdate rptDate<!-- ,nvl((select reportStaut from pbcrs_report_condition where CONDITIONSEQNO like '%'||em.motgacltalctrctbssgmtseqno||'%'),'0') reportStaut --> 
+from PBCRS_REPORT_MOTCLTCTRBSSGMTM em inner join PBCRS_REPORT_MOTCLTCTRBSSGMT emm on em.motgacltalctrctbssgmtseqno = emm.motgacltalctrctbssgmtseqno and emm.sourcesys in('MIS','SLNENT','CRMS') where em.reportflag='0' and em.sourcesys in('MIS','SLNENT','CRMS') and emm.reportflag='0' and emm.RPTDATECODE='30'
+
+union
+select ectr.enctrctinfmdfcseqno ReportModId,ectr.infrectype InfRecType,enctrc.name entName,enctrc.IDTYPE entCertType,enctrc.IDNUM entCertNum,ectr.rptdate rptDate<!-- ,nvl((select reportStaut from pbcrs_report_condition where CONDITIONSEQNO like '%'||ectr.enctrctinfmdfcseqno||'%'),'0') reportStaut --> 
+from PBCRS_REPORT_ENCTRINFMDFBSSGMT ectr inner join PBCRS_REPORT_ENCTRCTBSSGMT enctrc on ectr.enctrctinfmdfcseqno=enctrc.CtrctBsSgmtSeqNo where ectr.reportflag='0'
+union
+select eacc.bssgmtseqno ReportModId,eacc.infrectype InfRecType,enacc.name entName,enacc.IDType entCertType,enacc.IDNum entCertNum,eacc.rptdate rptDate<!-- ,nvl((select reportStaut from pbcrs_report_condition where CONDITIONSEQNO like '%'||eacc.bssgmtseqno||'%'),'0') reportStaut  -->
+from PBCRS_REPORT_ENACCINFMDFBSSGMT eacc inner join PBCRS_REPORT_ENACCTBSSGMT enacc on eacc.bssgmtseqno=enacc.AcctBsSgmtSeqNo where eacc.reportflag='0'
+union
+select esec.bssgmtseqno ReportModId,esec.infrectype InfRecType,enguar.name entName,enguar.IDType entCertType,enguar.IDNum entCertNum,esec.rptdate rptDate<!-- ,nvl((select reportStaut from pbcrs_report_condition where CONDITIONSEQNO like '%'||esec.bssgmtseqno||'%'),'0') reportStaut --> 
+from PBCRS_REPORT_ENSECACCMDFBSSGMT esec inner join PBCRS_REPORT_ENGUARACCTBSSGMT enguar on esec.bssgmtseqno=enguar.GuarAcctBsSgmtSeqNo  where esec.reportflag='0'
+<!-- 授信标识变更 -->
+union
+select ectr.ENCTRCTINFIDCAGSINFSEQNO ReportModId,ectr.infrectype InfRecType,enctrc.name entName,enctrc.IDTYPE entCertType,enctrc.IDNUM entCertNum,to_char(ectr.etl_date,'yyyy-mm-dd') rptDate<!-- ,nvl((select reportStaut from pbcrs_report_condition where CONDITIONSEQNO like '%'||ectr.enctrctinfmdfcseqno||'%'),'0') reportStaut --> 
+from pbcrs_report_enctrctinfidcagsi ectr inner join PBCRS_REPORT_ENCTRCTBSSGMT enctrc on ectr.ENCTRCTINFIDCAGSINFSEQNO=enctrc.CtrctBsSgmtSeqNo where ectr.reportflag='0'
+<!-- 借贷标识变更 -->
+union
+select eacc.ENACCTINFIDCAGSINFSEQNO ReportModId,eacc.infrectype InfRecType,enacc.name entName,enacc.IDType entCertType,enacc.IDNum entCertNum,to_char(eacc.etl_date,'yyyy-mm-dd') rptDate<!-- ,nvl((select reportStaut from pbcrs_report_condition where CONDITIONSEQNO like '%'||eacc.bssgmtseqno||'%'),'0') reportStaut  -->
+from PBCRS_REPORT_ENACCINFIDCAGINF eacc inner join PBCRS_REPORT_ENACCTBSSGMT enacc on eacc.ENACCTINFIDCAGSINFSEQNO=enacc.AcctBsSgmtSeqNo where eacc.reportflag='0'
+<!-- 担保标识变更 -->
+union
+select esec.ENSECACCTIDCAGSINFSEQNO ReportModId,esec.infrectype InfRecType,enguar.name entName,enguar.IDType entCertType,enguar.IDNum entCertNum,to_char(esec.etl_date,'yyyy-mm-dd') rptDate<!-- ,nvl((select reportStaut from pbcrs_report_condition where CONDITIONSEQNO like '%'||esec.bssgmtseqno||'%'),'0') reportStaut --> 
+from PBCRS_REPORT_ENSECACCIDCAGINF esec inner join PBCRS_REPORT_ENGUARACCTBSSGMT enguar on esec.ENSECACCTIDCAGSINFSEQNO=enguar.GuarAcctBsSgmtSeqNo  where esec.reportflag='0'
+<!-- 抵质押标识变更 -->
+union
+select em.MOCIDCAGSINFSEQNO ReportModId,em.infrectype InfRecType,emm.name entName,emm.certtype entCertType,emm.certnum entCertNum,to_char(em.etl_date,'yyyy-mm-dd') rptDate<!-- ,nvl((select reportStaut from pbcrs_report_condition where CONDITIONSEQNO like '%'||em.motgacltalctrctbssgmtseqno||'%'),'0') reportStaut -->
+from PBCRS_REPORT_MOCIDCAGSINF em inner join PBCRS_REPORT_MOTCLTCTRBSSGMT emm on em.MOCIDCAGSINFSEQNO = emm.motgacltalctrctbssgmtseqno and emm.sourcesys in('MIS','SLNENT','CRMS') where em.reportflag='0' and em.sourcesys in('MIS','SLNENT','CRMS') and emm.reportflag='0' and emm.RPTDATECODE='30'
+
+) A
+	  	WHERE ROWNUM &lt;=${endindex}
+	  	<include refid="sql_selectCont"></include>
+	  	order by A.rptDate desc,rownum
+  	) where RN &gt;${startindex}
+  </select>
+  
+  <select id="checkMsg" resultType="map" parameterType="map">
+	select * from (select ''''||s.conditionid||'''' CONDTIONID,BADFILENAME BADNAME from PBCRS_REPORT_CONDITION t
+    inner join PBCRS_REPORT_SENDFILE s on t.conditionid =s.conditionid
+   	where t.conditionseqno like '%'||#{seqno}||'%'  order by SEQNO desc
+  ) A where rownum = 1
+	
+ </select>
+ 
+ 
+ <sql id="sql_selectLogInfo">
+	 <if test="reportDate != null and reportDate != ''">
+			and ETL_TX_DATE = #{reportDate}
+	</if>   
+	 <if test="reportType != null and reportType != ''">
+			and sgmtid = #{reportType}
+	</if>  
+	
+	
+		
+</sql>
+ <select id="selectLogInfoPage" resultType="map" parameterType="map">
+select * from (
+select A.*,rownum Rn from (
+	select * from  (
+select substr(TXTFILENAME,length(TXTFILENAME)-33,34)  TXTFILENAME, c.sgmtid, t.conditionid, t.LOG_INFO, t.LOG_NBR,to_char(START_TIME,'yyyy-mm-dd') ETL_TX_DATE,to_char(START_TIME,'yyyy-mm-dd HH:mi:ss') START_TIME,to_char(END_TIME,'yyyy-mm-dd HH:mi:ss') END_TIME,substr(s.badfilename,length(s.badfilename)-33,34) BADFILENAME from PBCRS_REPORT_LOG t
+inner join PBCRS_REPORT_SENDFILE s on t.conditionid=s.conditionid
+inner join PBCRS_REPORT_CONDITION c  on t.conditionid=c.conditionid
+where t.conditionid is not null
+
+union
+select substr(TXTFILENAME,length(TXTFILENAME)-33,34), c.sgmtid,t.conditionid, case  when BADFILENAME is  null and ENCFILENAME is null then ''
+when BADFILENAME is not null  then '本地校验失败' else '本地校验成功' end LOGINFO,9999999,to_char(CREATEDATE,'yyyy-mm-dd'),'','',substr(t.badfilename,length(t.badfilename)-33,34) from PBCRS_REPORT_SENDFILE t
+inner join PBCRS_REPORT_LOG l on t.conditionid=l.conditionid
+inner join PBCRS_REPORT_CONDITION c  on t.conditionid=c.conditionid
+where t.conditionid is not null
+) 
+where 1=1
+<include refid="sql_selectLogInfo"></include>
+order by ETL_TX_DATE||CONDITIONID desc,LOG_NBR
+)A where rownum  &lt;=${endindex}
+) where Rn &gt;${startindex}
+
+</select> 
+ 
+  <select id="selectLogInfoCount" resultType="int" parameterType="map">
+SELECT count(1) from ( 
+	select * from  (
+select c.sgmtid, t.conditionid, t.LOG_INFO, t.LOG_NBR,to_char(START_TIME,'yyyy-mm-dd')  ETL_TX_DATE,to_char(START_TIME,'yyyy-mm-dd HH:mi:ss') START_TIME,to_char(END_TIME,'yyyy-mm-dd HH:mi:ss') END_TIME,'' BADFILENAME from PBCRS_REPORT_LOG t
+inner join PBCRS_REPORT_SENDFILE s on t.conditionid=s.conditionid
+inner join PBCRS_REPORT_CONDITION c  on t.conditionid=c.conditionid
+where t.conditionid is not null
+
+union
+select c.sgmtid,t.conditionid, case  when BADFILENAME is  null and ENCFILENAME is null then ''
+when BADFILENAME is not null  then '本地校验失败' else '本地校验成功' end LOGINFO,9999999,to_char(CREATEDATE,'yyyy-mm-dd'),'','',BADFILENAME from PBCRS_REPORT_SENDFILE t
+inner join PBCRS_REPORT_LOG l on t.conditionid=l.conditionid
+inner join PBCRS_REPORT_CONDITION c  on t.conditionid=c.conditionid
+where t.conditionid is not null
+) order by CONDITIONID,LOG_NBR
+) A where 1=1 
+<include refid="sql_selectLogInfo"></include>
+  </select>
+  
+  
+  <sql id="sql_byInParagraphCondition">
+	<if test="queryIDName != null and queryIDName != ''">
+			and NAME like '%' || #{queryIDName} || '%'
+	</if>   
+	 <if test="queryIDNum != null and queryIDNum != ''">
+			and IDNUM like '%' || #{queryIDNum} || '%'
+	</if>  
+	 <if test="queryRptDate != null and queryRptDate != ''">
+			and rptdate = #{queryRptDate}
+	</if> 
+	<if test="queryRptType !=null and queryRptType !=''">
+    	and InfRecType = #{queryRptType}
+    </if>
+		
+ </sql>
+  
+  <select id="byInParagraphDeleteListPage" resultType="map" parameterType="map">
+		select * from (
+			select A.*,rownum Rn from (
+				select * from (
+						select distinct b.AcctBsSgmtSeqNo REPORTMODID,b.Name,b.IDType,b.IDNum,del.INFRECTYPE,to_char(del.etl_date,'yyyy-mm-dd') as RPTDATE from PBCRS_REPORT_INACCTDEL del
+						inner join PBCRS_REPORT_ACCTBSSGMT b 
+						on del.inacctdelseqno = b.acctbssgmtseqno
+						where del.reportflag='0' 
+						
+						union all 
+						
+						select distinct b.CtrctBsSgmtSeqNo REPORTMODID,b.Name,b.IDType,b.IDNum,del.INFRECTYPE,to_char(del.etl_date,'yyyy-mm-dd') as RPTDATE from PBCRS_REPORT_InCtrctDel del
+						inner join PBCRS_REPORT_CTRCTBSSGMT b 
+						on del.INCTRCTDELSEQNO = b.CtrctBsSgmtSeqNo
+						where del.reportflag='0' 
+				
+				  ) o order by rptdate desc
+			)A where rownum  &lt;=${endindex}
+			<include refid="sql_byInParagraphCondition"></include>
+		) where Rn &gt;${startindex}
+
+</select> 
+
+<select id="byInParagraphDeleteCount" resultType="int" parameterType="map">
+		select count(1) from (
+						select distinct b.AcctBsSgmtSeqNo REPORTMODID,b.Name,b.IDType,b.IDNum,del.INFRECTYPE,b.RPTDATE from PBCRS_REPORT_INACCTDEL del
+						inner join PBCRS_REPORT_ACCTBSSGMT b 
+						on del.inacctdelseqno = b.acctbssgmtseqno
+						where del.reportflag='0' 
+						
+						union all 
+						
+						select distinct b.CtrctBsSgmtSeqNo REPORTMODID,b.Name,b.IDType,b.IDNum,del.INFRECTYPE,b.RPTDATE from PBCRS_REPORT_InCtrctDel del
+						inner join PBCRS_REPORT_CTRCTBSSGMT b 
+						on del.INCTRCTDELSEQNO = b.CtrctBsSgmtSeqNo
+						where del.reportflag='0' 
+		) A  where 1 = 1
+		<include refid="sql_byInParagraphCondition"></include>
+</select> 
+  
+  
+    <sql id="sql_byEnParagraphCondition">
+	<if test="queryIDName != null and queryIDName != ''">
+			and NAME like '%' || #{queryIDName} || '%'
+	</if>   
+	 <if test="queryIDNum != null and queryIDNum != ''">
+			and IDNUM like '%' || #{queryIDNum} || '%'
+	</if>  
+	 <if test="queryRptDate != null and queryRptDate != ''">
+			and rptdate = #{queryRptDate}
+	</if> 
+	<if test="queryRptType !=null and queryRptType !=''">
+    	and InfRecType = #{queryRptType}
+    </if>
+		
+ </sql>
+    <select id="byEnParagraphDeleteListPage" resultType="map" parameterType="map">
+		select * from (
+			select A.*,rownum Rn from (
+				select * from (
+						select distinct b.AcctBsSgmtSeqNo REPORTMODID,b.Name,b.IDType,b.IDNum,del.INFRECTYPE,b.RPTDATE from pbcrs_report_enacctinfdel del
+			            inner join PBCRS_REPORT_ENACCTBSSGMT b 
+			            on del.enacctinfidcagsinfseqno = b.acctbssgmtseqno
+			            where del.reportflag='0'
+						
+						union all 
+						
+						select distinct b.guaracctbssgmtseqno REPORTMODID,b.Name,b.IDType,b.IDNum,del.DELRECTYPE,b.RPTDATE from pbcrs_report_EnSecAcctDel del
+			            inner join PBCRS_REPORT_ENGUARACCTBSSGMT b 
+			            on del.ensecacctdelseqno = b.guaracctbssgmtseqno
+			            where del.reportflag='0'
+			            
+			            union all
+			            
+			            select distinct b.ctrctbssgmtseqno REPORTMODID,b.Name,b.IDType,b.IDNum,del.INFRECTYPE,b.RPTDATE from pbcrs_report_EnCtrctInfDel del
+			            inner join PBCRS_REPORT_ENCTRCTBSSGMT b 
+			            on del.enctrctinfdelseqno = b.ctrctbssgmtseqno
+			            where del.reportflag='0'
+				
+				  ) o order by rptdate desc
+			)A where rownum  &lt;=${endindex}
+			<include refid="sql_byEnParagraphCondition"></include>
+		) where Rn &gt;${startindex}
+
+</select> 
+
+<select id="byEnParagraphDeleteCount" resultType="int" parameterType="map">
+		select count(1) from (
+						select distinct b.AcctBsSgmtSeqNo REPORTMODID,b.Name,b.IDType,b.IDNum,del.INFRECTYPE,b.RPTDATE from pbcrs_report_enacctinfdel del
+			            inner join PBCRS_REPORT_ENACCTBSSGMT b 
+			            on del.enacctinfidcagsinfseqno = b.acctbssgmtseqno
+			            where del.reportflag='0'
+						
+						union all 
+						
+						select distinct b.guaracctbssgmtseqno REPORTMODID,b.Name,b.IDType,b.IDNum,del.DELRECTYPE,b.RPTDATE from pbcrs_report_EnSecAcctDel del
+			            inner join PBCRS_REPORT_ENGUARACCTBSSGMT b 
+			            on del.ensecacctdelseqno = b.guaracctbssgmtseqno
+			            where del.reportflag='0'
+			            
+			            union all
+			            
+			            select distinct b.ctrctbssgmtseqno REPORTMODID,b.Name,b.IDType,b.IDNum,del.INFRECTYPE,b.RPTDATE from pbcrs_report_EnCtrctInfDel del
+			            inner join PBCRS_REPORT_ENCTRCTBSSGMT b 
+			            on del.enctrctinfdelseqno = b.ctrctbssgmtseqno
+			            where del.reportflag='0'
+		
+		) A  where 1 = 1
+		<include refid="sql_byEnParagraphCondition"></include>
+</select> 
+  
+</mapper>

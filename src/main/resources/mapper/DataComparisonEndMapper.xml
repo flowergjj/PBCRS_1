@@ -1,0 +1,1924 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.hkbank.pbcrs.dao.DataComparisonEndMapper">
+
+
+
+	<sql id="test">
+		<if test="queryRptDate != null and queryRptDate != ''">
+			and data_dt = to_date(#{queryRptDate},'yyyy-mm-dd')
+		</if>
+
+		<if test="dataType != null and dataType != ''">
+			and data_type = #{dataType}
+		</if>
+		<if test="fieldType != null and fieldType != ''">
+			and field3 = #{fieldType}
+		</if>
+		<if test="fieldCode != null and fieldCode != ''">
+			and field4 like '%${fieldCode}%'
+		</if>
+	</sql>
+	
+	<sql id="compare">
+		<if test="fieldType != null and fieldType != ''">
+			and field3 = #{fieldType}
+		</if>
+		<if test="fieldCode != null and fieldCode != ''">
+			and field4 like '%${fieldCode}%'
+		</if>
+	</sql>
+
+
+	
+
+	<select id="getCount" parameterType="map" resultType="int">
+		select count(1) from (
+		select distinct COMPARE_NO compareNo,filename,nvl(field44,' ')field44 from
+		PBCRS_DATA_COMPARE where 1=1
+		<include refid="test"></include>
+		)
+	</select>
+
+	<select id="dataList" parameterType="map" resultType="map">
+		select * from (
+		SELECT A.*, ROWNUM RN from (
+		select distinct COMPARE_NO
+		compareNo,filename,nvl(field44,' ')field44 from PBCRS_DATA_COMPARE
+		where 1=1
+		<include refid="test"></include>
+		order by field44 desc
+		) A
+		WHERE ROWNUM &lt;=${endindex}
+		) where RN &gt;${startindex}
+
+	</select>
+
+	<select id="getDetailCount" parameterType="map" resultType="int">
+
+		select count(1) from PBCRS_DATA_COMPARE where 1=1
+		<include refid="test"></include>
+
+	</select>
+
+	<select id="dataDetailList" parameterType="map" resultType="map">
+		select * from (
+		SELECT A.*, ROWNUM RN from (
+		select * from PBCRS_DATA_COMPARE where 1=1
+		<include refid="test"></include>
+		) A
+		WHERE ROWNUM &lt;=${endindex}
+		) where RN &gt;${startindex}
+
+	</select>
+	
+<select id="getDetailCompareCount" parameterType="map"
+	resultType="int">
+
+	select count(1) from (
+	select
+	field1,field2,field3,field4,field5,field6,field7,field8,field9,field10,field11,field12,field13,field14,field15,field16,ARLPNAME,ARLPCERTTYPE,ARLPCERTNUM,ARLPAMT
+	from PBCRS_DATA_COMPARE where data_dt =
+	to_date(#{queryRptDate},'yyyy-mm-dd') and data_type = #{type1}
+	<include refid="compare"></include>
+	minus
+	select
+	field1,field2,field3,field4,field5,field6,field7,field8,field9,field10,field11,field12,field13,field14,field15,field16,ARLPNAME,ARLPCERTTYPE,ARLPCERTNUM,ARLPAMT
+	from PBCRS_DATA_COMPARE where data_dt =
+	to_date(#{queryRptDate},'yyyy-mm-dd') and data_type = #{type2}
+	<include refid="compare"></include>
+	)
+
+</select>
+
+	<select id="dataDetailListCompare" parameterType="map"
+		resultType="map">
+		select * from (
+		SELECT A.*, ROWNUM RN from (
+		select
+		field1,field2,field3,field4,field5,field6,field7,field8,field9,field10,field11,field12,field13,field14,field15,field16,ARLPNAME,ARLPCERTTYPE,ARLPCERTNUM,ARLPAMT
+		from PBCRS_DATA_COMPARE where data_dt =
+		to_date(#{queryRptDate},'yyyy-mm-dd') and data_type = #{type1}
+			<include refid="compare"></include>
+		minus
+		select
+		field1,field2,field3,field4,field5,field6,field7,field8,field9,field10,field11,field12,field13,field14,field15,field16,ARLPNAME,ARLPCERTTYPE,ARLPCERTNUM,ARLPAMT
+		from PBCRS_DATA_COMPARE where data_dt =
+		to_date(#{queryRptDate},'yyyy-mm-dd') and data_type = #{type2}
+			<include refid="compare"></include>
+		) A
+		WHERE
+		ROWNUM &lt;=${endindex}
+		) where RN &gt;${startindex}
+
+	</select>
+
+	<update id="upd" parameterType="map">
+		update PBCRS_DATA_COMPARE set ${param} where table_key = #{tableKey}
+	</update>
+
+
+	<select id="Dc" parameterType="map"
+		resultType="com.hkbank.pbcrs.model.DataComparisonEnd">
+		select t.ACCTBSSGMTSEQNO ENACCTINFSEQNO,
+		'D10025210H0005' field1,
+		to_char(to_date(#{queryRptDate}, 'yyyy-mm-dd'),'yyyymmdd') field2,
+		'1' field3,
+		ACCTCODE field4,
+		NAME field5,
+		IDTYPE field6,
+		IDNUM field7,
+		nvl(BUSIDTLLINES,' ') field8,
+		OPENDATE field9,
+		DUEDATE field10,
+		(case
+		when ACCTTYPE != 'R1' then
+		LOANAMT
+		else
+		ACCTCREDLINE
+		end) field11,
+		nvl(GUARMODE,' ') field12,
+		nvl(ACCTBAL,'0') field13,
+		nvl(FIVECATE,' ') field14,
+		nvl(TOTOVERD,'0') field15,
+		nvl(OVERDDY,'0') field16,
+		nvl(RLTREPYMTNM,'0') field17,
+		ARLPNAME arlpName,
+		ARLPCERTTYPE arlpCerttype,
+		ARLPCERTNUM arlpCertnum,
+		ARLPAMT arlpAmt
+		from (select ACCTBSSGMTSEQNO,
+		INFRECTYPE,
+		ACCTTYPE,
+		ACCTCODE,
+		RPTDATE,
+		RPTDATECODE,
+		NAME,
+		IDTYPE,
+		IDNUM,
+		MNGMTORGCODE
+		from PBCRS_REPORT_ENACCTBSSGMT t
+		inner join (
+		select max(en.etl_date) edate,en.acctcode seqno
+		from PBCRS_REPORT_ENACCTBSSGMT en
+		left join (select acctcode acctcode
+		from PBCRS_REPORT_ENACCTBSSGMT where rptdatecode='20' and etl_date &lt;=
+		to_date(#{queryRptDate}, 'yyyy-mm-dd') and sourcesys IN
+		('CRMS','SLNENT')
+		) tt on en.acctcode = tt.acctcode
+		where tt.acctcode is null and etl_date &lt;= to_date(#{queryRptDate},
+		'yyyy-mm-dd') and sourcesys IN ('CRMS','SLNENT')
+		group by en.acctcode) ts
+		on t.acctcode = ts.seqno and t.etl_date = ts.edate
+
+		where 1 = 1 and t.etl_date &lt;=to_date(#{queryRptDate}, 'yyyy-mm-dd') and
+		sourcesys IN ('CRMS','SLNENT') ) t
+		inner join PBCRS_REPORT_ENACCTBSINFSGMT t1
+		on t.ACCTBSSGMTSEQNO = t1.ACCTBSINFSGMTSEQNO
+		left join PBCRS_REPORT_ENRLTREPINFSGMT t2
+		on t.ACCTBSSGMTSEQNO = t2.RLTREPYMTINFSGMTSEQNO
+		inner join PBCRS_REPORT_ACTLBLTYINFSGMT t6
+		on t.ACCTBSSGMTSEQNO = t6.ACTLBLTYINFSGMTSEQNO
+		left join (
+		select
+		RLTREPYMTINFSGMTSEQNO rno,
+		wm_concat(ARLPNAME) ARLPNAME,
+		wm_concat(ARLPCERTTYPE) ARLPCERTTYPE,
+		wm_concat(ARLPCERTNUM) ARLPCERTNUM,
+		wm_concat(ARLPAMT) ARLPAMT from PBCRS_REPORT_ENRLTREPYMTINF tr
+		inner join (
+		select max(en.etl_date) edate,en.acctcode seqno
+		from PBCRS_REPORT_ENACCTBSSGMT en
+		left join (select acctcode acctcode
+		from PBCRS_REPORT_ENACCTBSSGMT where rptdatecode='20' and etl_date &lt;=
+		to_date(#{queryRptDate}, 'yyyy-mm-dd') and sourcesys IN
+		('CRMS','SLNENT')
+		) tt on en.acctcode = tt.acctcode
+		where tt.acctcode is null and etl_date &lt;= to_date(#{queryRptDate},
+		'yyyy-mm-dd') and sourcesys IN ('CRMS','SLNENT')
+		group by en.acctcode) ts
+		on
+		'D10025210H0005'||substr(tr.rltrepymtinfsgmtseqno,0,length(tr.rltrepymtinfsgmtseqno)-
+		case when sourcesys='CRMS' THEN 14 ELSE 10 END) = ts.seqno and
+		tr.etl_date = ts.edate
+		where tr.etl_date &lt;= to_date(#{queryRptDate}, 'yyyy-mm-dd') and
+		sourcesys IN ('CRMS','SLNENT')
+		group by RLTREPYMTINFSGMTSEQNO
+		) t8 on t8.rno= t.ACCTBSSGMTSEQNO
+
+	</select>
+
+
+	<select id="Gu" parameterType="map"
+		resultType="com.hkbank.pbcrs.model.DataComparisonEnd">
+		select t.GUARACCTBSSGMTSEQNO ENSECACCTINFSEQNO,
+		'D10025210H0005' field1,
+		to_char(to_date(#{queryRptDate}, 'yyyy-mm-dd'),'yyyymmdd') field2,
+		'2' field3,
+		ACCTCODE field4,
+		NAME field5,
+		IDTYPE field6,
+		IDNUM field7,
+		nvl(BUSIDTILLINES,' ') field8,
+		nvl(OPENDATE,' ') field9,
+		nvl(DUEDATE,' ') field10,
+		nvl(GUARAMT,'0') field11,
+		nvl(GUARMODE,' ') field12,
+		nvl(LOANAMT,'0') field13,
+		nvl(FIVECATE,' ') field14,
+		' ' field15,
+		' ' field16,
+		nvl(RLTREPYMTNM,'0') field17,
+		ARLPNAME ARLPNAME,
+		ARLPCERTTYPE ARLPCERTTYPE,
+		ARLPCERTNUM ARLPCERTNUM,
+		ARLPAMT ARLPAMT
+		from (select GUARACCTBSSGMTSEQNO,
+		INFRECTYPE,
+		ACCTTYPE,
+		ACCTCODE,
+		RPTDATE,
+		RPTDATECODE,
+		NAME,
+		IDTYPE,
+		IDNUM,
+		MNGMTORGCODE
+		from PBCRS_REPORT_ENGUARACCTBSSGMT t
+		inner join (
+		select max(en.etl_date) edate,en.acctcode seqno
+		from PBCRS_REPORT_ENGUARACCTBSSGMT en
+		left join (select acctcode acctcode
+		from PBCRS_REPORT_ENGUARACCTBSSGMT where rptdatecode='20' and etl_date
+		&lt;= to_date(#{queryRptDate}, 'yyyy-mm-dd') and sourcesys IN
+		('CRMS','SLNENT')
+		) tt on en.acctcode = tt.acctcode
+		where tt.acctcode is null and etl_date &lt;= to_date(#{queryRptDate},
+		'yyyy-mm-dd') and sourcesys IN ('CRMS','SLNENT')
+		group by en.acctcode) ts
+		on t.acctcode = ts.seqno and t.etl_date = ts.edate
+		where 1 = 1 and etl_date &lt;= to_date(#{queryRptDate}, 'yyyy-mm-dd') and
+		sourcesys='CRMS') t
+		inner join PBCRS_REPORT_ENGUAACCBSINFSGMT t1
+		on t.GUARACCTBSSGMTSEQNO = t1.GUARACCTBSINFSGMTSEQNO
+		left join PBCRS_REPORT_GSERLTREPINFSGMT t2
+		on t.GUARACCTBSSGMTSEQNO = t2.RLTREPYMTINFSGMTSEQNO
+		left join PBCRS_REPORT_EGUARLTREPINFSGMT t5
+		on t.guaracctbssgmtseqno = t5.guarrltrepymtinfsgmtseqno
+		left join (
+		select
+		rltrepymtinfsgmtseqno rno,
+		wm_concat(ARLPNAME) ARLPNAME,
+		wm_concat(ARLPCERTTYPE) ARLPCERTTYPE,
+		wm_concat(ARLPCERTNUM) ARLPCERTNUM,
+		wm_concat(ARLPAMT) ARLPAMT from PBCRS_REPORT_GSERLTREPYMTINF tr
+		inner join (
+		select max(en.etl_date) edate,en.acctcode seqno
+		from PBCRS_REPORT_ENGUARACCTBSSGMT en
+		left join (select acctcode acctcode
+		from PBCRS_REPORT_ENGUARACCTBSSGMT where rptdatecode='20' and etl_date
+		&lt;= to_date(#{queryRptDate}, 'yyyy-mm-dd') and sourcesys IN
+		('CRMS','SLNENT')
+		) tt on en.acctcode = tt.acctcode
+		where tt.acctcode is null and etl_date &lt;= to_date(#{queryRptDate},
+		'yyyy-mm-dd') and sourcesys IN ('CRMS','SLNENT')
+		group by en.acctcode) ts
+		on
+		'D10025210H0005'||substr(tr.rltrepymtinfsgmtseqno,0,length(tr.rltrepymtinfsgmtseqno)-14)
+		= ts.seqno and tr.etl_date = ts.edate
+		where tr.etl_date &lt;= to_date(#{queryRptDate}, 'yyyy-mm-dd') and
+		tr.sourcesys = 'CRMS'
+		group by rltrepymtinfsgmtseqno
+		) t8 on t8.rno= t.guaracctbssgmtseqno
+	</select>
+
+	<select id="Sx" parameterType="map"
+		resultType="com.hkbank.pbcrs.model.DataComparisonEnd">
+
+		select t.CTRCTBSSGMTSEQNO ENCTRCTINFSEQNO,
+		'D10025210H0005' field1,
+		to_char(to_date(#{queryRptDate}, 'yyyy-mm-dd'),'yyyymmdd') field2,
+		'3' field3,
+		t.CONTRACTCODE field4,
+		NAME field5,
+		IDTYPE field6,
+		IDNUM field7,
+		LIMLOOPFLG field8,
+		nvl(CONEFFDATE,' ') field9,
+		nvl(CONEXPDATE,' ') field10,
+		CREDITLIM field11,
+		' ' field12,
+		' ' field13,
+		' ' field14,
+		' ' field15,
+		' ' field16,
+		'0' field17
+
+		from PBCRS_REPORT_ENCTRCTBSSGMT t
+		inner join (
+		select max(en.etl_date) edate, en.CONTRACTCODE seqno
+		from PBCRS_REPORT_ENCTRCTBSSGMT en
+		left join (select contractcode contractcode
+		from PBCRS_REPORT_ENCTRCTBSSGMT where rptdatecode='20' and etl_date &lt;=
+		to_date(#{queryRptDate}, 'yyyy-mm-dd') and
+		etl_date>to_date('2020-08-07', 'yyyy-mm-dd') and sourcesys IN
+		('CRMS','SLNENT')
+		) tt on en.contractcode = tt.contractcode
+		where tt.contractcode is null and etl_date &lt;= to_date(#{queryRptDate},
+		'yyyy-mm-dd') and etl_date>to_date('2020-08-07', 'yyyy-mm-dd') and
+		sourcesys IN ('CRMS','SLNENT')
+		group by en.contractcode) ts
+		on t.CONTRACTCODE = ts.seqno and t.etl_date = ts.edate
+		inner join PBCRS_REPORT_ENCREDITLIMSGMT t2
+		on t.CTRCTBSSGMTSEQNO = t2.CREDITLIMSGMTSEQNO
+
+		where 1 = 1
+
+
+	</select>
+
+	<select id="Dzy" parameterType="map"
+		resultType="com.hkbank.pbcrs.model.DataComparisonEnd">
+
+
+		select t.MOTGACLTALCTRCTBSSGMTSEQNO MOTGACLTALCTRCTINFSEQNO,
+		'D10025210H0005' field1,
+		to_char(to_date(#{queryRptDate}, 'yyyy-mm-dd'),'yyyymmdd') field2,
+		'4' field3,
+		t.CCCODE field4,
+		NAME field5,
+		CERTTYPE field6,
+		CERTNUM field7,
+		GUARTYPE field8,
+		nvl(CCVALDATE,' ') field9,
+		nvl(CCEXPDATE,' ') field10,
+		CCAMT field11,
+		' ' field12,
+		' ' field13,
+		' ' field14,
+		' ' field15,
+		' ' field16,
+		'0' field17
+
+		from PBCRS_REPORT_MOTCLTCTRBSSGMT t
+		inner join (
+		select max(en.etl_date) edate,en.CCCODE CCCODE
+		from PBCRS_REPORT_MOTCLTCTRBSSGMT en
+		left join (select cccode cccode
+		from PBCRS_REPORT_MOTCLTCTRBSSGMT where rptdatecode='20' and etl_date
+		&lt;= to_date(#{queryRptDate}, 'yyyy-mm-dd') and
+		etl_date>to_date('2020-08-07', 'yyyy-mm-dd') and sourcesys IN
+		('CRMS','SLNENT')
+		) tt on en.cccode = tt.cccode
+		where tt.cccode is null and etl_date &lt;= to_date(#{queryRptDate},
+		'yyyy-mm-dd') and etl_date>to_date('2020-08-07', 'yyyy-mm-dd') and
+		sourcesys IN ('CRMS','SLNENT')
+		group by en.cccode) ts
+		on t.cccode = ts.CCCODE and t.etl_date=ts.edate
+		inner join PBCRS_REPORT_MOTCLTBSINFSGMT t1
+		on t.MOTGACLTALCTRCTBSSGMTSEQNO = t1.MOTGACLTALBSINFSGMTSEQNO
+		where 1 = 1
+
+
+	</select>
+
+	<select id="DcInter" parameterType="map"
+		resultType="com.hkbank.pbcrs.model.DataComparisonEnd">
+
+		select 'D10025210H0005' field1,
+		to_char(t.datadate,'yyyymmdd') field2,
+		'1' field3,
+		'D10025210H0005' || t.ACCTCODE field4,
+		NAME field5,
+		IDTYPE field6,
+		IDNUM field7,
+		nvl(BUSIDTLLINES, ' ') field8,
+		OPENDATE field9,
+		DUEDATE field10,
+		(case
+		when ACCTTYPE != 'R1' then
+		LOANAMT
+		else
+		ACCTCREDLINE
+		end) field11,
+		nvl(GUARMODE, ' ') field12,
+		nvl(ACCTBAL, '0') field13,
+		nvl(FIVECATE, ' ') field14,
+		nvl(TOTOVERD, '0') field15,
+		nvl(OVERDDY, '0') field16,
+		'0' field17,
+		ARLPNAME arlpName,
+		ARLPCERTTYPE arlpCerttype,
+		ARLPCERTNUM arlpCertnum,
+		ARLPAMT arlpAmt
+		from (select tl.acctcode acctcode,
+		tl.accttype accttype,
+		tl.datadate datadate,
+		en.entname name,
+		en.entcerttype IDTYPE,
+		en.entcertnum IDNUM,
+		nvl(BLinesMapping.Sys_Code, tl.BusiDtlLines) BUSIDTLLINES,
+		to_char(to_date(tl.OpenDate, 'yyyy/mm/dd'), 'yyyy-mm-dd') opendate,
+		to_char(to_date(tl.duedate, 'yyyy/mm/dd'), 'yyyy-mm-dd') duedate,
+		ceil(tl.loanamt) loanamt,
+		ceil(tl.acctcredline) acctcredline,
+		(case
+		when tl.guarmode is null or m.noguarflag = '1' or
+		(tl.accttype = 'D2' and
+		nvl(VOUCHTYPEMaping.Sys_Code, tl.guarmode) in
+		('2', '3')) then
+		'0'
+		else
+		nvl(VOUCHTYPEMaping.Sys_Code, tl.guarmode)
+		end) guarmode,
+		ceil(tl.acctbal) acctbal,
+		nvl(CLASSIFYRESULTMapping.Sys_Code, '9') FIVECATE,
+		ceil(tl.totoverd) totoverd,
+		tl.overddy overddy
+		from pbcrs_datacrms_enloaninfo tl
+		inner join pbcrs_datacrms_enbaseinfo en
+		on tl.sourcecustid = en.sourcecustid
+		left join pbcrs_datacrms_encancelinfo tc
+		on tl.acctcode = tc.acctcode and tc.datadate &lt;=
+		to_date(#{queryRptDate}, 'yyyy-mm-dd')
+		left join (select SC.SOURCECUSTID custid
+		from PBCRS_REPORT_SPECUSTID sc
+		where sc.sourcesys = 'MIS'
+		and sc.state = '1'
+		and sc.spe_type = '1') sc1
+		on tl.sourcecustid = sc1.custid
+		left join (select SC.SOURCECUSTID custid
+		from PBCRS_REPORT_SPECUSTID sc
+		where sc.sourcesys = 'MIS'
+		and sc.state = '1'
+		and sc.spe_type = '2') sc2
+		on tl.sourcecustid = sc2.custid
+		left join (select *
+		from pbcrs_report_code_mapping
+		where Sourcesys = 'CRMS'
+		and Sourcefiled = 'BUSINESSSUBTYPEBLines') BLinesMapping
+		on tl.BusiDtlLines = BLinesMapping.Sourcecode
+		left join (select *
+		from pbcrs_report_code_mapping
+		where Sourcesys = 'CRMS'
+		and Sourcefiled = 'VOUCHTYPE') VOUCHTYPEMaping
+		on substr(tl.GuarMode, 0, 2) = VOUCHTYPEMaping.Sourcecode
+		left join (select *
+		from pbcrs_report_code_mapping
+		where Sourcesys = 'CRMS'
+		and Sourcefiled = 'CLASSIFYRESULT') CLASSIFYRESULTMapping
+		on tl.FiveCate = CLASSIFYRESULTMapping.Sourcecode
+		left join pbcrs_report_busilines_mapping m
+		on tl.busidtllines = m.prodid
+		and m.sourcesys = 'CRMS'
+		and m.busitype = 'DC'
+		where tl.datadate = to_date(#{queryRptDate}, 'yyyy-mm-dd')
+		and en.datadate = to_date(#{queryRptDate}, 'yyyy-mm-dd')
+		and tl.closedate is null
+		and sc1.custid is null
+		and sc2.custid is null
+		and tc.acctcode is null) t
+		left join (select tgr.acctcode acctcode,
+		wm_concat(tgr.arlpname) ARLPNAME,
+		wm_concat((case
+		when nvl(CUSTOMERTYPEMapping.Sys_Code, '2') = '1' then
+		case
+		when nvl(CERTTYPEMaping.Sys_Code, 'X') = '2' then
+		'X'
+		else
+		nvl(CERTTYPEMaping.Sys_Code, 'X')
+		end
+		when tgr.arlptype = '3' then
+		tgr.ARLPCERTTYPE
+		else
+		nvl(CERTTYPEEntMaping.Sys_Code, '30')
+		end)) ARLPCERTTYPE,
+		wm_concat(case
+		when nvl(CUSTOMERTYPEMapping.Sys_Code, '2') = '1' and
+		nvl(CERTTYPEMaping.Sys_Code, 'X') = '5' and
+		length(tgr.arlpcertnum) = 11 then
+		substr(tgr.arlpcertnum, 0, 9)
+		else
+		tgr.arlpcertnum
+		end) ARLPCERTNUM,
+		wm_concat(ceil(tgr.arlpamt)) ARLPAMT
+		from pbcrs_datacrms_enloanrelerpy tgr
+		inner join (select tl.acctcode acctcode
+		from pbcrs_datacrms_enloaninfo tl
+		inner join pbcrs_datacrms_enbaseinfo tr
+		on tl.sourcecustid = tr.sourcecustid
+		left join pbcrs_datacrms_encancelinfo tc
+		on tl.acctcode = tc.acctcode and tc.datadate
+		&lt;=to_date(#{queryRptDate}, 'yyyy-mm-dd')
+		left join (select SC.SOURCECUSTID custid
+		from PBCRS_REPORT_SPECUSTID sc
+		where sc.sourcesys = 'MIS'
+		and sc.state = '1'
+		and sc.spe_type = '1') sc1
+		on tl.sourcecustid = sc1.custid
+		left join (select SC.SOURCECUSTID custid
+		from PBCRS_REPORT_SPECUSTID sc
+		where sc.sourcesys = 'MIS'
+		and sc.state = '1'
+		and sc.spe_type = '2') sc2
+		on tl.sourcecustid = sc2.custid
+		where tl.datadate = to_date(#{queryRptDate}, 'yyyy-mm-dd')
+		and tr.datadate = to_date(#{queryRptDate}, 'yyyy-mm-dd')
+		and tl.closedate is null
+		and sc1.custid is null
+		and sc2.custid is null
+		and tc.acctcode is null) tw
+		on tgr.acctcode = tw.acctcode
+		left join (select *
+		from pbcrs_report_code_mapping
+		where Sourcesys = 'CRMS'
+		and Sourcefiled = 'CUSTOMERTYPE') CUSTOMERTYPEMapping
+		on tgr.InfoIDType = CUSTOMERTYPEMapping.Sourcecode
+		left join (select *
+		from pbcrs_report_code_mapping
+		where Sourcesys = 'CRMS'
+		and Sourcefiled = 'CERTTYPE') CERTTYPEMaping
+		on tgr.arlpcerttype = CERTTYPEMaping.Sourcecode
+		left join (select *
+		from pbcrs_report_code_mapping
+		where Sourcesys = 'CRMS'
+		and Sourcefiled = 'CERTTYPEEnt') CERTTYPEEntMaping
+		on tgr.arlpcerttype = CERTTYPEEntMaping.Sourcecode
+		where tgr.datadate = to_date(#{queryRptDate}, 'yyyy-mm-dd')
+		group by tgr.acctcode) t8
+		on t8.acctcode = t.acctcode
+		union all
+		select 'D10025210H0005' field1,
+		to_char(t.datadate,'yyyymmdd') field2,
+		'1' field3,
+		'D10025210H0005' || t.ACCTCODE field4,
+		NAME field5,
+		IDTYPE field6,
+		IDNUM field7,
+		nvl(BUSIDTLLINES, ' ') field8,
+		OPENDATE field9,
+		DUEDATE field10,
+		(case
+		when ACCTTYPE != 'R1' then
+		LOANAMT
+		else
+		ACCTCREDLINE
+		end) field11,
+		nvl(GUARMODE, ' ') field12,
+		nvl(ACCTBAL, '0') field13,
+		nvl(FIVECATE, ' ') field14,
+		nvl(TOTOVERD, '0') field15,
+		nvl(OVERDDY, '0') field16,
+		'0' field17,
+		ARLPNAME arlpName,
+		ARLPCERTTYPE arlpCerttype,
+		ARLPCERTNUM arlpCertnum,
+		ARLPAMT arlpAmt
+		from (select tl.acctcode acctcode,
+		tl.accttype accttype,
+		tl.datadate datadate,
+		en.entname name,
+		en.entcerttype IDTYPE,
+		en.entcertnum IDNUM,
+		nvl(BLinesMapping.Sys_Code, tl.BusiDtlLines) BUSIDTLLINES,
+		tl.OpenDate opendate,
+		tl.duedate duedate,
+		ceil(tl.loanamt) loanamt,
+		ceil(tl.acctcredline) acctcredline,
+		(case
+		when tl.guarmode is null or m.noguarflag = '1' or
+		(tl.accttype = 'D2' and
+		nvl(VOUCHTYPEMaping.Sys_Code, tl.guarmode) in
+		('2', '3')) then
+		'0'
+		else
+		nvl(VOUCHTYPEMaping.Sys_Code, tl.guarmode)
+		end) guarmode,
+		ceil(tl.acctbal) acctbal,
+		nvl(CLASSIFYRESULTMapping.Sys_Code, '9') FIVECATE,
+		ceil(tl.totoverd) totoverd,
+		tl.overddy overddy
+		from pbcrs_datasln_enloaninfo tl
+		inner join pbcrs_datasln_enbaseinfo en
+		on tl.sourcecustid = en.sourcecustid
+		left join pbcrs_datasln_encancelinfo tc
+		on tl.acctcode = tc.acctcode and tc.datadate
+		&lt;=to_date(#{queryRptDate}, 'yyyy-mm-dd')
+		left join (select *
+		from pbcrs_report_code_mapping
+		where Sourcesys = 'SLNENT'
+		and Sourcefiled = 'ProdIdBusLines') BLinesMapping
+		on tl.BusiDtlLines = BLinesMapping.Sourcecode
+		left join (select *
+		from pbcrs_report_code_mapping
+		where Sourcesys = 'SLNENT'
+		and Sourcefiled = 'assukind') VOUCHTYPEMaping
+		on tl.GuarMode = VOUCHTYPEMaping.Sourcecode
+		left join (select *
+		from pbcrs_report_code_mapping
+		where Sourcesys = 'MIS'
+		and Sourcefiled = 'CLASSIFYRESULT') CLASSIFYRESULTMapping
+		on tl.FiveCate = CLASSIFYRESULTMapping.Sourcecode
+		left join pbcrs_report_busilines_mapping m
+		on tl.busidtllines = m.prodid
+		and m.sourcesys = 'SLNENT'
+		and m.busitype = 'DC'
+		where tl.datadate = to_date(#{queryRptDate}, 'yyyy-mm-dd')
+		and en.datadate = to_date(#{queryRptDate}, 'yyyy-mm-dd')
+		and tl.closedate is null
+		and tc.acctcode is null) t
+		left join (select tgr.acctcode acctcode,
+		wm_concat(tgr.arlpname) ARLPNAME,
+		wm_concat(nvl(CERTTYPEMaping.Sys_Code, 'X')) ARLPCERTTYPE,
+		wm_concat(case
+		when nvl(CERTTYPEMaping.Sys_Code, 'X') = '5' and
+		length(tgr.arlpcertnum) = 11 then
+		substr(tgr.arlpcertnum, 0, 9)
+		else
+		tgr.arlpcertnum
+		end) ARLPCERTNUM,
+		wm_concat(ceil(tgr.arlpamt)) ARLPAMT
+		from pbcrs_datasln_enloanrelerpy tgr
+		inner join (select tl.acctcode acctcode
+		from pbcrs_datasln_enloaninfo tl
+		inner join pbcrs_datasln_enbaseinfo tr
+		on tl.sourcecustid = tr.sourcecustid
+		left join pbcrs_datasln_encancelinfo tc
+		on tl.acctcode = tc.acctcode and tc.datadate &lt; =
+		to_date(#{queryRptDate}, 'yyyy-mm-dd')
+		where tl.datadate= to_date(#{queryRptDate}, 'yyyy-mm-dd')
+		and tr.datadate = to_date(#{queryRptDate}, 'yyyy-mm-dd')
+		and tl.closedate is null
+		and tc.acctcode is null) tw
+		on tgr.acctcode = tw.acctcode
+		left join (select *
+		from pbcrs_report_code_mapping
+		where Sourcesys = 'SLNENT'
+		and Sourcefiled = 'CUSTOMERTYPE') CUSTOMERTYPEMapping
+		on tgr.InfoIDType = CUSTOMERTYPEMapping.Sourcecode
+		left join (select *
+		from pbcrs_report_code_mapping
+		where Sourcesys = 'SLNENT'
+		and Sourcefiled = 'CERTTYPE') CERTTYPEMaping
+		on tgr.arlpcerttype = CERTTYPEMaping.Sourcecode
+		where tgr.datadate = to_date(#{queryRptDate}, 'yyyy-mm-dd')
+		group by tgr.acctcode) t8
+		on t8.acctcode = t.acctcode
+
+
+	</select>
+
+
+	<select id="GuInter" parameterType="map"
+		resultType="com.hkbank.pbcrs.model.DataComparisonEnd">
+		select 'D10025210H0005' field1,
+		to_char(tl.datadate,'yyyymmdd') field2,
+		'2' field3,
+		'D10025210H0005' || t.ACCTCODE field4,
+		tl.entname field5,
+		tl.entcerttype field6,
+		tl.entcertnum field7,
+		t.bsLines field8,
+		to_char(to_date(t.OpenDate, 'yyyy/mm/dd'), 'yyyy-mm-dd') field9,
+		to_char(to_date(t.DUEDATE, 'yyyy/mm/dd'), 'yyyy-mm-dd') field10,
+		nvl(t.guaramt, '0') field11,
+		nvl(t.guarmode, ' ') field12,
+		nvl(t.loanamt, '0') field13,
+		nvl(t.fivecate, ' ') field14,
+		' ' field15,
+		' ' field16,
+		'0' field17,
+		ARLPNAME ARLPNAME,
+		ARLPCERTTYPE ARLPCERTTYPE,
+		ARLPCERTNUM ARLPCERTNUM,
+		ARLPAMT ARLPAMT
+		from (select ti.sourcecustid scid,
+		ti.acctcode acctcode,
+		nvl(BLinesMapping.Sys_Code, ti.BusiDtlLines) bsLines,
+		ti.opendate opendate,
+		ti.duedate duedate,
+		ceil(ti.guaramt) guaramt,
+		case
+		when bm.noguarflag = '1' then
+		'0'
+		else
+		nvl(VOUCHTYPEMaping.Sys_Code, '0')
+		end guarmode,
+		ceil(tr.loanamt) loanamt,
+		nvl(CLASSIFYRESULTMapping.Sys_Code, '9') fivecate
+		from pbcrs_datacrms_enguarantyinfo ti
+		inner join pbcrs_datacrms_enguarrepyinfo tr
+		on ti.acctcode = tr.acctcode
+		left join pbcrs_datacrms_encancelinfo tc
+		on ti.acctcode = tc.acctcode and tc.datadate
+		&lt;=to_date(#{queryRptDate}, 'yyyy-mm-dd')
+		left join (select SC.SOURCECUSTID custid
+		from PBCRS_REPORT_SPECUSTID sc
+		where sc.sourcesys = 'MIS'
+		and sc.state = '1'
+		and sc.spe_type = '1') sc1
+		on ti.sourcecustid = sc1.custid
+		left join (select SC.SOURCECUSTID custid
+		from PBCRS_REPORT_SPECUSTID sc
+		where sc.sourcesys = 'MIS'
+		and sc.state = '1'
+		and sc.spe_type = '2') sc2
+		on ti.sourcecustid = sc2.custid
+		left join (select *
+		from pbcrs_report_code_mapping
+		where Sourcesys = 'CRMS'
+		and Sourcefiled = 'BUSINESSSUBTYPEBusDtiLines') BLinesMapping
+		on ti.BusiDtlLines = BLinesMapping.Sourcecode
+		left join (select *
+		from pbcrs_report_code_mapping
+		where Sourcesys = 'CRMS'
+		and Sourcefiled = 'VOUCHTYPE') VOUCHTYPEMaping
+		on substr(ti.reguarmode, 0, 2) = VOUCHTYPEMaping.Sourcecode
+		left join PBCRS_REPORT_BUSILINES_MAPPING bm
+		on bm.PRODID = ti.BusiDtlLines
+		and bm.sourcesys = 'CRMS'
+		AND bm.busitype = 'GU'
+		left join (select *
+		from pbcrs_report_code_mapping
+		where Sourcesys = 'CRMS'
+		and Sourcefiled = 'CLASSIFYRESULT') CLASSIFYRESULTMapping
+		on tr.FiveCate = CLASSIFYRESULTMapping.Sourcecode
+		where ti.datadate = to_date(#{queryRptDate}, 'yyyy-mm-dd')
+		and tr.datadate = to_date(#{queryRptDate}, 'yyyy-mm-dd')
+		and tr.closedate is null
+		and tr.compadvflag != '1'
+		and tc.acctcode is null
+		and sc1.custid is null and sc2.custid is null) t
+		inner join pbcrs_datacrms_enbaseinfo tl
+		on t.scid = tl.sourcecustid
+		left join (select tgr.acctcode acctcode,
+		wm_concat(tgr.ArlpName) ArlpName,
+		wm_concat((case
+		when nvl(CUSTOMERTYPEMapping.Sys_Code, '2') = '1' then
+		case
+		when nvl(CERTTYPEMaping.Sys_Code, 'X') = '2' then
+		'X'
+		else
+		nvl(CERTTYPEMaping.Sys_Code, 'X')
+		end
+		else
+		nvl(CERTTYPEEntMaping.Sys_Code, '30')
+		end)) ARLPCERTTYPE,
+		wm_concat(case
+		when nvl(CUSTOMERTYPEMapping.Sys_Code, '2') = '1' and
+		nvl(CERTTYPEMaping.Sys_Code, 'X') = '5' and
+		length(tgr.arlpcertnum) = 11 then
+		substr(tgr.arlpcertnum, 0, 9)
+		else
+		tgr.arlpcertnum
+		end) ARLPCERTNUM,
+		wm_concat(ceil(tgr.ArlpAmt)) ArlpAmt
+		from pbcrs_datacrms_enguarrelerpy tgr
+		inner join (select ti.acctcode acctcode
+		from pbcrs_datacrms_enguarantyinfo ti
+		inner join pbcrs_datacrms_enguarrepyinfo tr
+		on ti.acctcode = tr.acctcode
+		left join pbcrs_datacrms_encancelinfo tc
+		on ti.acctcode = tc.acctcode and tc.datadate &lt; =
+		to_date(#{queryRptDate}, 'yyyy-mm-dd')
+		left join (select SC.SOURCECUSTID custid
+		from PBCRS_REPORT_SPECUSTID sc
+		where sc.sourcesys = 'MIS'
+		and sc.state = '1'
+		and sc.spe_type = '1') sc1
+		on ti.sourcecustid = sc1.custid
+		left join (select SC.SOURCECUSTID custid
+		from PBCRS_REPORT_SPECUSTID sc
+		where sc.sourcesys = 'MIS'
+		and sc.state = '1'
+		and sc.spe_type = '2') sc2
+		on ti.sourcecustid = sc2.custid
+		where ti.datadate = to_date(#{queryRptDate}, 'yyyy-mm-dd')
+		and tr.datadate = to_date(#{queryRptDate}, 'yyyy-mm-dd')
+		and tr.closedate is null
+		and tr.compadvflag != '1'
+		and tc.acctcode is null
+		and sc1.custid is null
+		and sc2.custid is null) tw
+		on tgr.acctcode = tw.acctcode
+
+		left join (select *
+		from pbcrs_report_code_mapping
+		where Sourcesys = 'CRMS'
+		and Sourcefiled = 'CUSTOMERTYPE') CUSTOMERTYPEMapping
+		on tgr.InfoIDType = CUSTOMERTYPEMapping.Sourcecode
+		left join (select *
+		from pbcrs_report_code_mapping
+		where Sourcesys = 'CRMS'
+		and Sourcefiled = 'CERTTYPE') CERTTYPEMaping
+		on tgr.arlpcerttype = CERTTYPEMaping.Sourcecode
+		left join (select *
+		from pbcrs_report_code_mapping
+		where Sourcesys = 'CRMS'
+		and Sourcefiled = 'CERTTYPEEnt') CERTTYPEEntMaping
+		on tgr.arlpcerttype = CERTTYPEEntMaping.Sourcecode
+		where tgr.datadate = to_date(#{queryRptDate}, 'yyyy-mm-dd')
+		group by tgr.acctcode) t8
+		on t8.acctcode = t.acctcode
+		where tl.datadate =to_date(#{queryRptDate}, 'yyyy-mm-dd')
+
+	</select>
+
+	<select id="SxInter" parameterType="map"
+		resultType="com.hkbank.pbcrs.model.DataComparisonEnd">
+
+		select 'D10025210H0005' field1,
+		to_char(t.datadate,'yyyymmdd') field2,
+		'3' field3,
+		'D10025210H0005' || t.creditserinalno field4,
+		ts.entname field5,
+		ts.entcerttype field6,
+		ts.entcertnum field7,
+		nvl(CYCLEFLAGMapping.sys_code, t.LimLoopFlg) field8,
+		to_char(to_date(t.ConEffDate, 'yyyy/mm/dd'), 'yyyy-mm-dd') field9,
+		nvl(to_char(to_date(t.ConExpDate, 'yyyy/mm/dd'), 'yyyy-mm-dd'),
+		'2099-12-31') field10,
+		ceil(t.CreditLim) field11,
+		' ' field12,
+		' ' field13,
+		' ' field14,
+		' ' field15,
+		' ' field16,
+		'0' field17
+
+		from pbcrs_datacrms_encreditinfo t
+		inner join pbcrs_datacrms_enbaseinfo ts
+		on t.sourcecustid = ts.sourcecustid
+		left join (select SC.SOURCECUSTID custid
+		from PBCRS_REPORT_SPECUSTID sc
+		where sc.sourcesys = 'MIS'
+		and sc.state = '1'
+		and sc.spe_type = '1') sc1 on t.sourcecustid = sc1.custid
+		left join (select *
+		from pbcrs_report_code_mapping
+		where Sourcesys = 'CRMS'
+		and Sourcefiled = 'CYCLEFLAG') CYCLEFLAGMapping
+		on t.LimLoopFlg = CYCLEFLAGMapping.Sourcecode
+
+		where t.ConExpDate >=
+		to_char(to_date(#{queryRptDate}, 'yyyy-mm-dd'), 'yyyy/mm/dd')
+		and t.constatus = '2020' and sc1.custid is null
+		and t.datadate = to_date(#{queryRptDate}, 'yyyy-mm-dd')
+		and ts.datadate = to_date(#{queryRptDate}, 'yyyy-mm-dd')
+
+	</select>
+
+	<select id="DzyInter" parameterType="map"
+		resultType="com.hkbank.pbcrs.model.DataComparisonEnd">
+
+
+		select distinct 'D10025210H0005' field1,
+		to_char(t.datadate,'yyyymmdd') field2,
+		'4' field3,
+		'D10025210H0005' || CCCODE field4,
+		t1.entname field5,
+		t1.entcerttype field6,
+		t1.entcertnum field7,
+		nvl(GUARANTYTYPEMaping.Sys_Code, t.ContType) field8,
+		nvl(t.ccvaldate, ' ') field9,
+		nvl(t.ccexpdate, ' ') field10,
+		ceil(t.ccamt) field11,
+		' ' field12,
+		' ' field13,
+		' ' field14,
+		' ' field15,
+		' ' field16,
+		'0' field17
+		from pbcrs_datasln_enguarantycont t
+		inner join pbcrs_datasln_enbaseinfo t1
+		on t.sourcecustid = t1.sourcecustid
+		inner join (select distinct t.acctcode acctcode
+		from pbcrs_datasln_enloaninfo t
+		where t.closedate is null
+		and t.datadate = to_date(#{queryRptDate}, 'yyyy-mm-dd')
+		and t.acctcode not in
+		(select acctcode from pbcrs_datasln_encancelinfo where datadate &lt;=
+		to_date(#{queryRptDate}, 'yyyy-mm-dd'))) ld
+		on ld.acctcode = t.acctcode
+		left join (select *
+		from pbcrs_report_code_mapping
+		where Sourcesys = 'SLNENT'
+		and Sourcefiled = 'CONTTYPE') GUARANTYTYPEMaping
+		on t.ContType = GUARANTYTYPEMaping.Sourcecode
+		where t.CCSTATUS = '1'
+		and t.datadate = to_date(#{queryRptDate}, 'yyyy-mm-dd')
+		and t1.datadate = to_date(#{queryRptDate}, 'yyyy-mm-dd')
+		and t.ccexpdate >
+		to_char(to_date(#{queryRptDate}, 'yyyy-mm-dd'), 'yyyy-mm-dd')
+		union all
+		select distinct 'D10025210H0005' field1,
+		to_char(t.datadate,'yyyymmdd') field2,
+		'4' field3,
+		'D10025210H0005' || CCCODE field4,
+		t1.entname field5,
+		t1.entcerttype field6,
+		t1.entcertnum field7,
+		nvl(GUARANTYTYPEMaping.Sys_Code, t.ContType) field8,
+		to_char(to_date(t.ccvaldate, 'yyyy/mm/dd'), 'yyyy-mm-dd') field9,
+		to_char(to_date(t.ccexpdate, 'yyyy/mm/dd'), 'yyyy-mm-dd') field10,
+		ceil(t.ccamt) field11,
+		' ' field12,
+		' ' field13,
+		' ' field14,
+		' ' field15,
+		' ' field16,
+		'0' field17
+		from pbcrs_datacrms_enguarantycont t
+		inner join pbcrs_datacrms_enbaseinfo t1
+		on t.sourcecustid = t1.sourcecustid
+		inner join (select distinct t.acctcode acctcode
+		from pbcrs_datacrms_enloaninfo t
+		where t.closedate is null
+		and t.datadate = to_date(#{queryRptDate}, 'yyyy-mm-dd')
+		and t.busilines not in
+		(select prodid
+		from pbcrs_report_busilines_mapping bm
+		where bm.sourcesys = 'CRMS'
+		and bm.busitype = 'DC'
+		and bm.noguarflag = '1')
+		and t.acctcode not in
+		(select acctcode
+		from pbcrs_datacrms_encancelinfo where datadate &lt;=
+		to_date(#{queryRptDate}, 'yyyy-mm-dd')
+		union
+		select SC.SOURCECUSTID acctcode
+		from PBCRS_REPORT_SPECUSTID sc
+		where sc.sourcesys = 'MIS'
+		and sc.state = '1'
+		and sc.spe_type = '2')) ld
+		on ld.acctcode = t.acctcode
+		left join (select SC.SOURCECUSTID scustid from PBCRS_REPORT_SPECUSTID sc
+		where sc.sourcesys='MIS' and sc.state='1' and sc.spe_type='1') sc1
+		on sc1.scustid = t.sourcecustid
+		left join (select SC.SOURCECUSTID scustid from PBCRS_REPORT_SPECUSTID sc
+		where sc.sourcesys='MIS' and sc.state='1' and sc.spe_type='1') sc2
+		on sc2.scustid = t.sourcecustid
+		left join (select *
+		from pbcrs_report_code_mapping
+		where Sourcesys = 'CRMS'
+		and sys_code_type = 'MotCltCtrType') GUARANTYTYPEMaping
+		on t.ContType = GUARANTYTYPEMaping.Sourcecode
+		where t.CCSTATUS = '030'
+		and t.datadate = to_date(#{queryRptDate}, 'yyyy-mm-dd')
+		and t1.datadate = to_date(#{queryRptDate}, 'yyyy-mm-dd')
+		and t.ccexpdate >
+		to_char(to_date(#{queryRptDate}, 'yyyy-mm-dd'), 'yyyy/mm/dd')
+		and t.ContType in ('01', '02', '04')
+		and sc1.scustid is null
+		and sc1.scustid is null
+	</select>
+
+
+	<insert id="addDc" parameterType="map">
+		insert into
+		PBCRS_DATA_COMPARE(field1,field2,field3,field4,field5,field6,field7,field8,field9,
+		field10,field11,field12,field13,field14,field15,field16,field17,DATA_TYPE,ARLPNAME,ARLPCERTTYPE,ARLPCERTNUM,ARLPAMT,DATA_DT)
+		select
+		'D10025210H0005' field1,
+		to_char(to_date(#{queryRptDate}, 'yyyy-mm-dd'),'yyyymmdd') field2,
+		'1' field3,
+		ACCTCODE field4,
+		NAME field5,
+		IDTYPE field6,
+		IDNUM field7,
+		nvl(BUSIDTLLINES,' ') field8,
+		OPENDATE field9,
+		DUEDATE field10,
+		(case
+		when ACCTTYPE != 'R1' then
+		LOANAMT
+		else
+		ACCTCREDLINE
+		end) field11,
+		nvl(GUARMODE,' ') field12,
+		nvl(ACCTBAL,'0') field13,
+		nvl(FIVECATE,' ') field14,
+		nvl(TOTOVERD,'0') field15,
+		nvl(OVERDDY,'0') field16,
+		nvl(RLTREPYMTNM,'0') field17,
+		'report' DATA_TYPE,
+		ARLPNAME arlpName,
+		ARLPCERTTYPE arlpCerttype,
+		ARLPCERTNUM arlpCertnum,
+		ARLPAMT arlpAmt ,
+		to_date(#{queryRptDate}, 'yyyy-mm-dd')
+		from (select ACCTBSSGMTSEQNO,
+		INFRECTYPE,
+		ACCTTYPE,
+		ACCTCODE,
+		RPTDATE,
+		RPTDATECODE,
+		NAME,
+		IDTYPE,
+		IDNUM,
+		MNGMTORGCODE
+		from PBCRS_REPORT_ENACCTBSSGMT t
+		inner join (
+		select max(en.etl_date) edate,en.acctcode seqno
+		from PBCRS_REPORT_ENACCTBSSGMT en
+		left join (select SC.SOURCECUSTID custid
+		from PBCRS_REPORT_SPECUSTID sc
+		where sc.sourcesys = 'MIS'
+		and sc.state = '1'
+		and sc.spe_type = '2') sc2
+		on en.acctcode = 'D10025210H0005' || sc2.custid
+		left join (select acctcode acctcode
+		from PBCRS_REPORT_ENACCTBSSGMT where rptdatecode='20' and etl_date &lt;=
+		to_date(#{queryRptDate}, 'yyyy-mm-dd') and sourcesys IN
+		('CRMS','SLNENT')
+		) tt on en.acctcode = tt.acctcode
+		where tt.acctcode is null and etl_date &lt;= to_date(#{queryRptDate},
+		'yyyy-mm-dd') and sourcesys IN ('CRMS','SLNENT')   and sc2.custid is null
+		group by en.acctcode) ts
+		on t.acctcode = ts.seqno and t.etl_date = ts.edate
+
+		where 1 = 1 and t.etl_date &lt;=to_date(#{queryRptDate}, 'yyyy-mm-dd') and
+		sourcesys IN ('CRMS','SLNENT') and etl_date>to_date('2020-08-07', 'yyyy-mm-dd')) t
+		inner join PBCRS_REPORT_ENACCTBSINFSGMT t1
+		on t.ACCTBSSGMTSEQNO = t1.ACCTBSINFSGMTSEQNO
+		left join PBCRS_REPORT_ENRLTREPINFSGMT t2
+		on t.ACCTBSSGMTSEQNO = t2.RLTREPYMTINFSGMTSEQNO
+		inner join PBCRS_REPORT_ACTLBLTYINFSGMT t6
+		on t.ACCTBSSGMTSEQNO = t6.ACTLBLTYINFSGMTSEQNO
+		left join (
+		select
+		RLTREPYMTINFSGMTSEQNO rno,
+		wm_concat(ARLPNAME) ARLPNAME,
+		wm_concat(ARLPCERTTYPE) ARLPCERTTYPE,
+		wm_concat(ARLPCERTNUM) ARLPCERTNUM,
+		wm_concat(ARLPAMT) ARLPAMT from (select * from PBCRS_REPORT_ENRLTREPYMTINF tr  where tr.etl_date &lt;= to_date(#{queryRptDate}, 'yyyy-mm-dd') and
+    tr.sourcesys IN ('CRMS','SLNENT') order by tr.arlpcertnum)  tr
+		inner join (
+		select max(en.etl_date) edate,en.acctcode seqno
+		from PBCRS_REPORT_ENACCTBSSGMT en
+		left join (select acctcode acctcode
+		from PBCRS_REPORT_ENACCTBSSGMT where rptdatecode='20' and etl_date &lt;=
+		to_date(#{queryRptDate}, 'yyyy-mm-dd') and sourcesys IN
+		('CRMS','SLNENT')
+		) tt on en.acctcode = tt.acctcode
+		where tt.acctcode is null and etl_date &lt;= to_date(#{queryRptDate},
+		'yyyy-mm-dd') and sourcesys IN ('CRMS','SLNENT') and etl_date>to_date('2020-08-07', 'yyyy-mm-dd')
+		group by en.acctcode) ts
+		on
+		'D10025210H0005'||substr(tr.rltrepymtinfsgmtseqno,0,length(tr.rltrepymtinfsgmtseqno)-
+		case when sourcesys='CRMS' THEN 14 ELSE 10 END) = ts.seqno and
+		tr.etl_date = ts.edate		
+		where tr.etl_date &lt;= to_date(#{queryRptDate}, 'yyyy-mm-dd') and
+		tr.sourcesys IN ('CRMS','SLNENT')
+		group by RLTREPYMTINFSGMTSEQNO
+		) t8 on t8.rno= t.ACCTBSSGMTSEQNO
+	</insert>
+
+	<insert id="addGu" parameterType="map">
+		insert into
+		PBCRS_DATA_COMPARE(field1,field2,field3,field4,field5,field6,field7,field8,field9,
+		field10,field11,field12,field13,field14,field15,field16,field17,DATA_TYPE,ARLPNAME,ARLPCERTTYPE,ARLPCERTNUM,ARLPAMT,DATA_DT)
+		select
+		'D10025210H0005' field1,
+		to_char(to_date(#{queryRptDate}, 'yyyy-mm-dd'),'yyyymmdd') field2,
+		'2' field3,
+		ACCTCODE field4,
+		NAME field5,
+		IDTYPE field6,
+		IDNUM field7,
+		nvl(BUSIDTILLINES,' ') field8,
+		nvl(OPENDATE,' ') field9,
+		nvl(DUEDATE,' ') field10,
+		nvl(GUARAMT,'0') field11,
+		nvl(GUARMODE,' ') field12,
+		nvl(LOANAMT,'0') field13,
+		nvl(FIVECATE,' ') field14,
+		' ' field15,
+		' ' field16,
+		nvl(RLTREPYMTNM,'0') field17,
+		'report' DATA_TYPE,
+		ARLPNAME ARLPNAME,
+		ARLPCERTTYPE ARLPCERTTYPE,
+		ARLPCERTNUM ARLPCERTNUM,
+		ARLPAMT ARLPAMT,
+		to_date(#{queryRptDate}, 'yyyy-mm-dd')
+		from (select GUARACCTBSSGMTSEQNO,
+		INFRECTYPE,
+		ACCTTYPE,
+		ACCTCODE,
+		RPTDATE,
+		RPTDATECODE,
+		NAME,
+		IDTYPE,
+		IDNUM,
+		MNGMTORGCODE
+		from PBCRS_REPORT_ENGUARACCTBSSGMT t
+		inner join (
+		select max(en.etl_date) edate,en.acctcode seqno
+		from PBCRS_REPORT_ENGUARACCTBSSGMT en
+		left join (select acctcode acctcode
+		from PBCRS_REPORT_ENGUARACCTBSSGMT where rptdatecode='20' and etl_date
+		&lt;= to_date(#{queryRptDate}, 'yyyy-mm-dd') and sourcesys IN
+		('CRMS','SLNENT')
+		) tt on en.acctcode = tt.acctcode
+		where tt.acctcode is null and etl_date &lt;= to_date(#{queryRptDate},
+		'yyyy-mm-dd') and sourcesys IN ('CRMS','SLNENT') and rptdatecode !='50'
+		group by en.acctcode) ts
+		on t.acctcode = ts.seqno and t.etl_date = ts.edate
+		where 1 = 1 and etl_date &lt;= to_date(#{queryRptDate}, 'yyyy-mm-dd') and 
+		sourcesys='CRMS' ) t
+		inner join PBCRS_REPORT_ENGUAACCBSINFSGMT t1
+		on t.GUARACCTBSSGMTSEQNO = t1.GUARACCTBSINFSGMTSEQNO
+		left join PBCRS_REPORT_GSERLTREPINFSGMT t2
+		on t.GUARACCTBSSGMTSEQNO = t2.RLTREPYMTINFSGMTSEQNO
+		left join PBCRS_REPORT_EGUARLTREPINFSGMT t5
+		on t.guaracctbssgmtseqno = t5.guarrltrepymtinfsgmtseqno
+		left join (
+		select
+		rltrepymtinfsgmtseqno rno,
+		wm_concat(ARLPNAME) ARLPNAME,
+		wm_concat(ARLPCERTTYPE) ARLPCERTTYPE,
+		wm_concat(ARLPCERTNUM) ARLPCERTNUM,
+		wm_concat(ARLPAMT) ARLPAMT from (select * from  PBCRS_REPORT_GSERLTREPYMTINF where etl_date &lt;= to_date(#{queryRptDate}, 'yyyy-mm-dd') and
+		sourcesys = 'CRMS' order by ARLPNAME) tr
+		inner join (
+		select max(en.etl_date) edate,en.acctcode seqno
+		from PBCRS_REPORT_ENGUARACCTBSSGMT en
+		left join (select acctcode acctcode
+		from PBCRS_REPORT_ENGUARACCTBSSGMT where rptdatecode='20' and etl_date
+		&lt;= to_date(#{queryRptDate}, 'yyyy-mm-dd') and sourcesys IN
+		('CRMS','SLNENT')
+		) tt on en.acctcode = tt.acctcode
+		where tt.acctcode is null and etl_date &lt;= to_date(#{queryRptDate},
+		'yyyy-mm-dd') and sourcesys IN ('CRMS','SLNENT') and rptdatecode !='50' 
+		group by en.acctcode) ts
+		on
+		'D10025210H0005'||substr(tr.rltrepymtinfsgmtseqno,0,length(tr.rltrepymtinfsgmtseqno)-14)
+		= ts.seqno and tr.etl_date = ts.edate
+		group by rltrepymtinfsgmtseqno
+		) t8 on t8.rno= t.guaracctbssgmtseqno
+	</insert>
+
+	<insert id="addSx" parameterType="map">
+		insert into
+		PBCRS_DATA_COMPARE(field1,field2,field3,field4,field5,field6,field7,field8,field9,
+		field10,field11,field12,field13,field14,field15,field16,field17,DATA_TYPE,DATA_DT)
+		select 
+		'D10025210H0005' field1,
+		to_char(to_date(#{queryRptDate}, 'yyyy-mm-dd'),'yyyymmdd') field2,
+		'3' field3,
+		t.CONTRACTCODE field4,
+		NAME field5,
+		IDTYPE field6,
+		IDNUM field7,
+		LIMLOOPFLG field8,
+		nvl(CONEFFDATE,' ') field9,
+		nvl(CONEXPDATE,' ') field10,
+		CREDITLIM field11,
+		' ' field12,
+		' ' field13,
+		' ' field14,
+		' ' field15,
+		' ' field16,
+		'0' field17,
+		'report' DATA_TYPE ,
+		to_date(#{queryRptDate}, 'yyyy-mm-dd')
+		from PBCRS_REPORT_ENCTRCTBSSGMT t
+		inner join (
+		select max(en.etl_date) edate, en.CONTRACTCODE seqno
+		from PBCRS_REPORT_ENCTRCTBSSGMT en
+		left join (select contractcode contractcode
+		from PBCRS_REPORT_ENCTRCTBSSGMT where rptdatecode='20' and etl_date &lt;=
+		to_date(#{queryRptDate}, 'yyyy-mm-dd') and
+		etl_date>to_date('2020-08-07', 'yyyy-mm-dd') and sourcesys IN
+		('CRMS','SLNENT')
+		) tt on en.contractcode = tt.contractcode
+		where tt.contractcode is null and etl_date &lt;= to_date(#{queryRptDate},
+		'yyyy-mm-dd') and etl_date>to_date('2020-08-07', 'yyyy-mm-dd') and
+		sourcesys IN ('CRMS','SLNENT')
+		group by en.contractcode) ts
+		on t.CONTRACTCODE = ts.seqno and t.etl_date = ts.edate
+		inner join PBCRS_REPORT_ENCREDITLIMSGMT t2
+		on t.CTRCTBSSGMTSEQNO = t2.CREDITLIMSGMTSEQNO
+
+		where 1 = 1
+	</insert>
+
+	<insert id="addDzy" parameterType="map">
+		insert into
+		PBCRS_DATA_COMPARE(field1,field2,field3,field4,field5,field6,field7,field8,field9,
+		field10,field11,field12,field13,field14,field15,field16,field17,DATA_TYPE,DATA_DT)
+		select
+		'D10025210H0005' field1,
+		to_char(to_date(#{queryRptDate}, 'yyyy-mm-dd'),'yyyymmdd') field2,
+		'4' field3,
+		t.CCCODE field4,
+		NAME field5,
+		CERTTYPE field6,
+		CERTNUM field7,
+		GUARTYPE field8,
+		nvl(CCVALDATE,' ') field9,
+		nvl(CCEXPDATE,' ') field10,
+		CCAMT field11,
+		' ' field12,
+		' ' field13,
+		' ' field14,
+		' ' field15,
+		' ' field16,
+		'0' field17,
+		'report' DATA_TYPE ,
+		to_date(#{queryRptDate}, 'yyyy-mm-dd')
+		from PBCRS_REPORT_MOTCLTCTRBSSGMT t
+		inner join (
+		select max(en.etl_date) edate,en.CCCODE CCCODE
+		from PBCRS_REPORT_MOTCLTCTRBSSGMT en
+		left join (select cccode cccode
+		from PBCRS_REPORT_MOTCLTCTRBSSGMT where rptdatecode='20' and etl_date
+		&lt;= to_date(#{queryRptDate}, 'yyyy-mm-dd') and
+		etl_date>to_date('2020-08-07', 'yyyy-mm-dd') and sourcesys IN
+		('CRMS','SLNENT')
+		) tt on en.cccode = tt.cccode
+		where tt.cccode is null and etl_date &lt;= to_date(#{queryRptDate},
+		'yyyy-mm-dd') and etl_date>to_date('2020-08-07', 'yyyy-mm-dd') and
+		sourcesys IN ('CRMS','SLNENT')
+		group by en.cccode) ts
+		on t.cccode = ts.CCCODE and t.etl_date=ts.edate
+		inner join PBCRS_REPORT_MOTCLTBSINFSGMT t1
+		on t.MOTGACLTALCTRCTBSSGMTSEQNO = t1.MOTGACLTALBSINFSGMTSEQNO
+		where 1 = 1
+	</insert>
+
+	<insert id="addDcInter" parameterType="map">
+		insert into
+		PBCRS_DATA_COMPARE(field1,field2,field3,field4,field5,field6,field7,field8,field9,
+		field10,field11,field12,field13,field14,field15,field16,field17,DATA_TYPE,ARLPNAME,ARLPCERTTYPE,ARLPCERTNUM,ARLPAMT,DATA_DT)
+		select 'D10025210H0005' field1,
+		to_char(t.datadate,'yyyymmdd') field2,
+		'1' field3,
+		'D10025210H0005' || t.ACCTCODE field4,
+		NAME field5,
+		IDTYPE field6,
+		IDNUM field7,
+		nvl(BUSIDTLLINES, ' ') field8,
+		OPENDATE field9,
+		DUEDATE field10,
+		(case
+		when ACCTTYPE != 'R1' then
+		LOANAMT
+		else
+		ACCTCREDLINE
+		end) field11,
+		nvl(GUARMODE, ' ') field12,
+		nvl(ACCTBAL, '0') field13,
+		nvl(FIVECATE, ' ') field14,
+		nvl(TOTOVERD, '0') field15,
+		case when TOTOVERD > 0 and  nvl(OverdDy, 0) = 0 then 
+		'1'
+		when length(nvl(OverdDy, 0)) >3 then '999' else
+		nvl(OVERDDY, '0') end field16,
+		'0' field17,
+		'data' DATA_TYPE ,
+		ARLPNAME arlpName,
+		ARLPCERTTYPE arlpCerttype,
+		ARLPCERTNUM arlpCertnum,
+		ARLPAMT arlpAmt,
+		to_date(#{queryRptDate}, 'yyyy-mm-dd')
+		from (select tl.acctcode acctcode,
+		tl.accttype accttype,
+		tl.datadate datadate,
+		tl.entname name,
+		en.entcerttype IDTYPE,
+		en.entcertnum IDNUM,
+		nvl(BLinesMapping.Sys_Code, tl.BusiDtlLines) BUSIDTLLINES,
+		to_char(to_date(tl.OpenDate, 'yyyy/mm/dd'), 'yyyy-mm-dd') opendate,
+		to_char(to_date(tl.duedate, 'yyyy/mm/dd'), 'yyyy-mm-dd') duedate,
+		ceil(tl.loanamt) loanamt,
+		ceil(tl.acctcredline) acctcredline,
+		(case when spe.spe_cloumn is not null then spe.spe_cloumn else
+		case
+		when tl.guarmode is null or m.noguarflag = '1' or
+		(tl.accttype = 'D2' and
+		nvl(VOUCHTYPEMaping.Sys_Code, tl.guarmode) in
+		('2', '3')) then
+		'0'
+		else
+		nvl(VOUCHTYPEMaping.Sys_Code, tl.guarmode)
+		end end) guarmode,
+		ceil(tl.acctbal) acctbal,
+		nvl(CLASSIFYRESULTMapping.Sys_Code, '9') FIVECATE,
+		ceil(tl.totoverd) totoverd,
+		tl.overddy overddy
+		from pbcrs_datacrms_enloaninfo tl
+		inner join pbcrs_datacrms_enbaseinfo en
+		on tl.sourcecustid = en.sourcecustid
+		left join pbcrs_datacrms_encancelinfo tc
+		on tl.acctcode = tc.acctcode and tc.datadate &lt;=
+		to_date(#{queryRptDate}, 'yyyy-mm-dd')
+		left join (select SC.SOURCECUSTID custid
+		from PBCRS_REPORT_SPECUSTID sc
+		where sc.sourcesys = 'MIS'
+		and sc.state = '1'
+		and sc.spe_type = '1') sc1
+		on tl.sourcecustid = sc1.custid
+		left join (select SC.SOURCECUSTID custid
+		from PBCRS_REPORT_SPECUSTID sc
+		where sc.sourcesys = 'MIS'
+		and sc.state = '1'
+		and sc.spe_type = '2') sc2
+		on tl.acctcode = sc2.custid
+		left join (select *
+		from pbcrs_report_code_mapping
+		where Sourcesys = 'CRMS'
+		and Sourcefiled = 'BUSINESSSUBTYPEBLines') BLinesMapping
+		on tl.BusiDtlLines = BLinesMapping.Sourcecode
+		left join (select *
+		from pbcrs_report_code_mapping
+		where Sourcesys = 'CRMS'
+		and Sourcefiled = 'VOUCHTYPE') VOUCHTYPEMaping
+		on substr(tl.GuarMode, 0, 2) = VOUCHTYPEMaping.Sourcecode
+		left join (select *
+		from pbcrs_report_code_mapping
+		where Sourcesys = 'CRMS'
+		and Sourcefiled = 'CLASSIFYRESULT') CLASSIFYRESULTMapping
+		on tl.FiveCate = CLASSIFYRESULTMapping.Sourcecode
+		left join pbcrs_report_busilines_mapping m
+		on tl.busidtllines = m.prodid
+		and m.sourcesys = 'CRMS'
+		and m.busitype = 'DC'
+		left join (
+		select *
+  from pbcrs_report_spedeal t
+ where t.term_name = 'ACCTBSINFSGMTSEQNO'
+   and t.spe_table_name = 'PBCRS_REPORT_ENACCTBSINFSGMT'
+   and t.spe_cloumn_name = 'GUARMODE'
+		) spe on tl.acctcode || '%' = spe.term
+		where tl.datadate = to_date(#{queryRptDate}, 'yyyy-mm-dd')
+		and en.datadate = to_date(#{queryRptDate}, 'yyyy-mm-dd')
+		and tl.closedate is null
+		and sc1.custid is null
+		and sc2.custid is null
+		and tc.acctcode is null) t
+		left join (select tgr.acctcode acctcode,
+		wm_concat(tgr.arlpname) ARLPNAME,
+		wm_concat((case
+		when nvl(CUSTOMERTYPEMapping.Sys_Code, '2') = '1' then
+		case
+		when nvl(CERTTYPEMaping.Sys_Code, 'X') = '2' then
+		'X'
+		else
+		nvl(CERTTYPEMaping.Sys_Code, 'X')
+		end
+		when tgr.arlptype = '3' then
+		tgr.ARLPCERTTYPE
+		else
+		nvl(CERTTYPEEntMaping.Sys_Code, '30')
+		end)) ARLPCERTTYPE,
+		wm_concat(case
+		when nvl(CUSTOMERTYPEMapping.Sys_Code, '2') = '1' and
+		nvl(CERTTYPEMaping.Sys_Code, 'X') = '5' and
+		length(tgr.arlpcertnum) = 11 then
+		substr(tgr.arlpcertnum, 0, 9)
+		else
+		tgr.arlpcertnum
+		end) ARLPCERTNUM,
+		wm_concat(ceil(tgr.arlpamt)) ARLPAMT
+		from (select *
+             from (select r.*,
+                          row_number() over(partition by ACCTCODE, ARLPCERTNUM, ARLPTYPE order by ccexpdate desc, ARLPAMT desc, MAXGUARMCC desc) rn
+                     from PBCRS_DATACRMS_ENLOANRELERPY r
+                    where datadate = to_date(#{queryRptDate}, 'yyyy-mm-dd')
+                    and (r.arlpcertnum,r.acctcode) not in(select SC.SOURCECUSTID,sc.acctcode from PBCRS_REPORT_SPECUSTID sc where sc.sourcesys='MIS' and sc.state='1' and sc.spe_type='4')
+                       and (r.arlptype != '3' or (pkg_checker_tools.fn_CheckOrgcode(r.arlpcertnum) = 1 and r.arlptype='3')) 
+                      order by r.arlpcertnum 
+                      )
+            where rn = 1) tgr
+		inner join (select tl.acctcode acctcode
+		from pbcrs_datacrms_enloaninfo tl
+		inner join pbcrs_datacrms_enbaseinfo tr
+		on tl.sourcecustid = tr.sourcecustid
+		left join pbcrs_datacrms_encancelinfo tc
+		on tl.acctcode = tc.acctcode and tc.datadate
+		&lt;=to_date(#{queryRptDate}, 'yyyy-mm-dd')
+		left join (select SC.SOURCECUSTID custid
+		from PBCRS_REPORT_SPECUSTID sc
+		where sc.sourcesys = 'MIS'
+		and sc.state = '1'
+		and sc.spe_type = '1') sc1
+		on tl.sourcecustid = sc1.custid
+		left join (select SC.SOURCECUSTID custid
+		from PBCRS_REPORT_SPECUSTID sc
+		where sc.sourcesys = 'MIS'
+		and sc.state = '1'
+		and sc.spe_type = '2') sc2
+		on tl.acctcode = sc2.custid
+		where tl.datadate = to_date(#{queryRptDate}, 'yyyy-mm-dd')
+		and tr.datadate = to_date(#{queryRptDate}, 'yyyy-mm-dd')
+		and tl.closedate is null
+		and sc1.custid is null
+		and sc2.custid is null
+		and tc.acctcode is null) tw
+		on tgr.acctcode = tw.acctcode
+		left join (select *
+		from pbcrs_report_code_mapping
+		where Sourcesys = 'CRMS'
+		and Sourcefiled = 'CUSTOMERTYPE') CUSTOMERTYPEMapping
+		on tgr.InfoIDType = CUSTOMERTYPEMapping.Sourcecode
+		left join (select *
+		from pbcrs_report_code_mapping
+		where Sourcesys = 'CRMS'
+		and Sourcefiled = 'CERTTYPE') CERTTYPEMaping
+		on tgr.arlpcerttype = CERTTYPEMaping.Sourcecode
+		left join (select *
+		from pbcrs_report_code_mapping
+		where Sourcesys = 'CRMS'
+		and Sourcefiled = 'CERTTYPEEnt') CERTTYPEEntMaping
+		on tgr.arlpcerttype = CERTTYPEEntMaping.Sourcecode		 
+		group by tgr.acctcode) t8
+		on t8.acctcode = t.acctcode
+		union all
+		select 'D10025210H0005' field1,
+		to_char(t.datadate,'yyyymmdd') field2,
+		'1' field3,
+		'D10025210H0005' || t.ACCTCODE field4,
+		NAME field5,
+		IDTYPE field6,
+		IDNUM field7,
+		nvl(BUSIDTLLINES, ' ') field8,
+		OPENDATE field9,
+		DUEDATE field10,
+		(case
+		when ACCTTYPE != 'R1' then
+		LOANAMT
+		else
+		ACCTCREDLINE
+		end) field11,
+		nvl(GUARMODE, ' ') field12,
+		nvl(ACCTBAL, '0') field13,
+		nvl(FIVECATE, ' ') field14,
+		nvl(TOTOVERD, '0') field15,
+		case when TOTOVERD > 0 and  nvl(OverdDy, 0) = 0 then 
+		'1'
+		when length(nvl(OverdDy, 0)) >3 then '999' else
+		nvl(OVERDDY, '0') end field16,
+		'0' field17,
+		'data' DATA_TYPE ,
+		ARLPNAME arlpName,
+		ARLPCERTTYPE arlpCerttype,
+		ARLPCERTNUM arlpCertnum,
+		ARLPAMT arlpAmt,
+		to_date(#{queryRptDate}, 'yyyy-mm-dd')
+		from (select tl.acctcode acctcode,
+		tl.accttype accttype,
+		tl.datadate datadate,
+		tl.entname name,
+		en.entcerttype IDTYPE,
+		en.entcertnum IDNUM,
+		nvl(BLinesMapping.Sys_Code, tl.BusiDtlLines) BUSIDTLLINES,
+		tl.OpenDate opendate,
+		tl.duedate duedate,
+		ceil(tl.loanamt) loanamt,
+		ceil(tl.acctcredline) acctcredline,
+		(case when spe.spe_cloumn is not null then spe.spe_cloumn else
+		case
+		when tl.guarmode is null or m.noguarflag = '1' or
+		(tl.accttype = 'D2' and
+		nvl(VOUCHTYPEMaping.Sys_Code, tl.guarmode) in
+		('2', '3')) then
+		'0'
+		else
+		nvl(VOUCHTYPEMaping.Sys_Code, tl.guarmode)
+		end end) guarmode,
+		ceil(tl.acctbal) acctbal,
+		nvl(CLASSIFYRESULTMapping.Sys_Code, '9') FIVECATE,
+		ceil(tl.totoverd) totoverd,
+		tl.overddy overddy
+		from pbcrs_datasln_enloaninfo tl
+		inner join pbcrs_datasln_enbaseinfo en
+		on tl.sourcecustid = en.sourcecustid
+		left join pbcrs_datasln_encancelinfo tc
+		on tl.acctcode = tc.acctcode and tc.datadate
+		&lt;=to_date(#{queryRptDate}, 'yyyy-mm-dd')
+		left join (select *
+		from pbcrs_report_code_mapping
+		where Sourcesys = 'SLNENT'
+		and Sourcefiled = 'ProdIdBusLines') BLinesMapping
+		on tl.BusiDtlLines = BLinesMapping.Sourcecode
+		left join (select *
+		from pbcrs_report_code_mapping
+		where Sourcesys = 'SLNENT'
+		and Sourcefiled = 'assukind') VOUCHTYPEMaping
+		on tl.GuarMode = VOUCHTYPEMaping.Sourcecode
+		left join (select *
+		from pbcrs_report_code_mapping
+		where Sourcesys = 'MIS'
+		and Sourcefiled = 'CLASSIFYRESULT') CLASSIFYRESULTMapping
+		on tl.FiveCate = CLASSIFYRESULTMapping.Sourcecode
+		left join pbcrs_report_busilines_mapping m
+		on tl.busidtllines = m.prodid
+		and m.sourcesys = 'SLNENT'
+		and m.busitype = 'DC'
+		left join (
+		select *
+  from pbcrs_report_spedeal t
+ where t.term_name = 'ACCTBSINFSGMTSEQNO'
+   and t.spe_table_name = 'PBCRS_REPORT_ENACCTBSINFSGMT'
+   and t.spe_cloumn_name = 'GUARMODE'
+		) spe on tl.acctcode || '%' = spe.term
+		where tl.datadate = to_date(#{queryRptDate}, 'yyyy-mm-dd')
+		and en.datadate = to_date(#{queryRptDate}, 'yyyy-mm-dd')
+		and tl.closedate is null
+		and tc.acctcode is null) t
+		left join (select tgr.acctcode acctcode,
+		wm_concat(tgr.arlpname) ARLPNAME,
+		wm_concat(nvl(CERTTYPEMaping.Sys_Code, 'X')) ARLPCERTTYPE,
+		wm_concat(case
+		when nvl(CERTTYPEMaping.Sys_Code, 'X') = '5' and
+		length(tgr.arlpcertnum) = 11 then
+		substr(tgr.arlpcertnum, 0, 9)
+		else
+		tgr.arlpcertnum
+		end) ARLPCERTNUM,
+		wm_concat(ceil(tgr.arlpamt)) ARLPAMT
+		from (select *
+             from (select r.*,
+                          row_number() over(partition by ACCTCODE, ARLPCERTNUM, ARLPTYPE order by ccexpdate desc, ARLPAMT desc, MAXGUARMCC desc) rn
+                     from PBCRS_DATASLN_ENLOANRELERPY r
+                    where datadate = to_date(#{queryRptDate}, 'yyyy-mm-dd')
+                    order by r.arlpcertnum 
+                    )
+            where rn = 1)  tgr
+		inner join (select tl.acctcode acctcode
+		from pbcrs_datasln_enloaninfo tl
+		inner join pbcrs_datasln_enbaseinfo tr
+		on tl.sourcecustid = tr.sourcecustid
+		left join pbcrs_datasln_encancelinfo tc
+		on tl.acctcode = tc.acctcode and tc.datadate &lt; =
+		to_date(#{queryRptDate}, 'yyyy-mm-dd')
+		where tl.datadate= to_date(#{queryRptDate}, 'yyyy-mm-dd')
+		and tr.datadate = to_date(#{queryRptDate}, 'yyyy-mm-dd')
+		and tl.closedate is null
+		and tc.acctcode is null) tw
+		on tgr.acctcode = tw.acctcode
+		left join (select *
+		from pbcrs_report_code_mapping
+		where Sourcesys = 'SLNENT'
+		and Sourcefiled = 'CUSTOMERTYPE') CUSTOMERTYPEMapping
+		on tgr.InfoIDType = CUSTOMERTYPEMapping.Sourcecode
+		left join (select *
+		from pbcrs_report_code_mapping
+		where Sourcesys = 'SLNENT'
+		and Sourcefiled = 'CERTTYPE') CERTTYPEMaping
+		on tgr.arlpcerttype = CERTTYPEMaping.Sourcecode
+		group by tgr.acctcode) t8
+		on t8.acctcode = t.acctcode
+	</insert>
+
+	<insert id="addGuInter" parameterType="map">
+		insert into
+		PBCRS_DATA_COMPARE(field1,field2,field3,field4,field5,field6,field7,field8,field9,
+		field10,field11,field12,field13,field14,field15,field16,field17,DATA_TYPE,ARLPNAME,ARLPCERTTYPE,ARLPCERTNUM,ARLPAMT,DATA_DT)
+		select 'D10025210H0005' field1,
+		to_char(tl.datadate,'yyyymmdd') field2,
+		'2' field3,
+		'D10025210H0005' || t.ACCTCODE field4,
+		t.name field5,
+		tl.entcerttype field6,
+		tl.entcertnum field7,
+		t.bsLines field8,
+		to_char(to_date(t.OpenDate, 'yyyy/mm/dd'), 'yyyy-mm-dd') field9,
+		to_char(to_date(t.DUEDATE, 'yyyy/mm/dd'), 'yyyy-mm-dd') field10,
+		nvl(t.guaramt, '0') field11,
+		nvl(t.guarmode, ' ') field12,
+		nvl(t.loanamt, '0') field13,
+		nvl(t.fivecate, ' ') field14,
+		' ' field15,
+		' ' field16,
+		'0' field17,
+		'data' DATA_TYPE ,
+		ARLPNAME ARLPNAME,
+		ARLPCERTTYPE ARLPCERTTYPE,
+		ARLPCERTNUM ARLPCERTNUM,
+		ARLPAMT ARLPAMT,
+		to_date(#{queryRptDate}, 'yyyy-mm-dd')
+		from (select ti.sourcecustid scid,
+		ti.entname name,
+		ti.acctcode acctcode,
+		nvl(BLinesMapping.Sys_Code, ti.BusiDtlLines) bsLines,
+		ti.opendate opendate,
+		ti.duedate duedate,
+		ceil(ti.guaramt) guaramt,
+		case
+		when bm.noguarflag = '1' then
+		'0'
+		else
+		nvl(VOUCHTYPEMaping.Sys_Code, '0')
+		end guarmode,
+		ceil(tr.loanamt) loanamt,
+		nvl(CLASSIFYRESULTMapping.Sys_Code, '9') fivecate
+		from pbcrs_datacrms_enguarantyinfo ti
+		inner join pbcrs_datacrms_enguarrepyinfo tr
+		on ti.acctcode = tr.acctcode
+		left join pbcrs_datacrms_encancelinfo tc
+		on ti.acctcode = tc.acctcode and tc.datadate
+		&lt;=to_date(#{queryRptDate}, 'yyyy-mm-dd')
+		left join (select SC.SOURCECUSTID custid
+		from PBCRS_REPORT_SPECUSTID sc
+		where sc.sourcesys = 'MIS'
+		and sc.state = '1'
+		and sc.spe_type = '1') sc1
+		on ti.sourcecustid = sc1.custid
+		left join (select SC.SOURCECUSTID custid
+		from PBCRS_REPORT_SPECUSTID sc
+		where sc.sourcesys = 'MIS'
+		and sc.state = '1'
+		and sc.spe_type = '2') sc2
+		on ti.sourcecustid = sc2.custid
+		left join (select *
+		from pbcrs_report_code_mapping
+		where Sourcesys = 'CRMS'
+		and Sourcefiled = 'BUSINESSSUBTYPEBusDtiLines') BLinesMapping
+		on ti.BusiDtlLines = BLinesMapping.Sourcecode
+		left join (select *
+		from pbcrs_report_code_mapping
+		where Sourcesys = 'CRMS'
+		and Sourcefiled = 'VOUCHTYPE') VOUCHTYPEMaping
+		on substr(ti.reguarmode, 0, 2) = VOUCHTYPEMaping.Sourcecode
+		left join PBCRS_REPORT_BUSILINES_MAPPING bm
+		on bm.PRODID = ti.BusiDtlLines
+		and bm.sourcesys = 'CRMS'
+		AND bm.busitype = 'GU'
+		left join (select *
+		from pbcrs_report_code_mapping
+		where Sourcesys = 'CRMS'
+		and Sourcefiled = 'CLASSIFYRESULT') CLASSIFYRESULTMapping
+		on tr.FiveCate = CLASSIFYRESULTMapping.Sourcecode
+		where ti.datadate = to_date(#{queryRptDate}, 'yyyy-mm-dd')
+		and tr.datadate = to_date(#{queryRptDate}, 'yyyy-mm-dd')
+		and tr.closedate is null
+		and tr.compadvflag != '1'
+		and tc.acctcode is null
+		and sc1.custid is null and sc2.custid is null) t
+		inner join pbcrs_datacrms_enbaseinfo tl
+		on t.scid = tl.sourcecustid
+		left join (select tgr.acctcode acctcode,
+		wm_concat(tgr.ArlpName) ArlpName,
+		wm_concat((case
+		when nvl(CUSTOMERTYPEMapping.Sys_Code, '2') = '1' then
+		case
+		when nvl(CERTTYPEMaping.Sys_Code, 'X') = '2' then
+		'X'
+		else
+		nvl(CERTTYPEMaping.Sys_Code, 'X')
+		end
+		else
+		nvl(CERTTYPEEntMaping.Sys_Code, '30')
+		end)) ARLPCERTTYPE,
+		wm_concat(case
+		when nvl(CUSTOMERTYPEMapping.Sys_Code, '2') = '1' and
+		nvl(CERTTYPEMaping.Sys_Code, 'X') = '5' and
+		length(tgr.arlpcertnum) = 11 then
+		substr(tgr.arlpcertnum, 0, 9)
+		else
+		tgr.arlpcertnum
+		end) ARLPCERTNUM,
+		wm_concat(ceil(tgr.ArlpAmt)) ArlpAmt
+		from (select *
+             from (select r.*,
+                          row_number() over(partition by ACCTCODE, ARLPCERTNUM, ARLPTYPE order by ARLPAMT desc, MAXGUARMCC desc) rn
+                     from pbcrs_datacrms_enguarrelerpy r
+                    where datadate = to_date(#{queryRptDate}, 'yyyy-mm-dd')
+                    and (r.arlpcertnum,r.acctcode) not in(select SC.SOURCECUSTID,sc.acctcode from PBCRS_REPORT_SPECUSTID sc where sc.sourcesys='MIS' and sc.state='1' and sc.spe_type='4')
+                    order by r.ArlpName 
+                    )
+            where rn = 1) tgr
+		inner join (select ti.acctcode acctcode
+		from pbcrs_datacrms_enguarantyinfo ti
+		inner join pbcrs_datacrms_enguarrepyinfo tr
+		on ti.acctcode = tr.acctcode
+		left join pbcrs_datacrms_encancelinfo tc
+		on ti.acctcode = tc.acctcode and tc.datadate &lt; =
+		to_date(#{queryRptDate}, 'yyyy-mm-dd')
+		left join (select SC.SOURCECUSTID custid
+		from PBCRS_REPORT_SPECUSTID sc
+		where sc.sourcesys = 'MIS'
+		and sc.state = '1'
+		and sc.spe_type = '1') sc1
+		on ti.sourcecustid = sc1.custid
+		left join (select SC.SOURCECUSTID custid
+		from PBCRS_REPORT_SPECUSTID sc
+		where sc.sourcesys = 'MIS'
+		and sc.state = '1'
+		and sc.spe_type = '2') sc2
+		on ti.sourcecustid = sc2.custid
+		where ti.datadate = to_date(#{queryRptDate}, 'yyyy-mm-dd')
+		and tr.datadate = to_date(#{queryRptDate}, 'yyyy-mm-dd')
+		and tr.closedate is null
+		and tr.compadvflag != '1'
+		and tc.acctcode is null
+		and sc1.custid is null
+		and sc2.custid is null) tw
+		on tgr.acctcode = tw.acctcode
+
+		left join (select *
+		from pbcrs_report_code_mapping
+		where Sourcesys = 'CRMS'
+		and Sourcefiled = 'CUSTOMERTYPE') CUSTOMERTYPEMapping
+		on tgr.InfoIDType = CUSTOMERTYPEMapping.Sourcecode
+		left join (select *
+		from pbcrs_report_code_mapping
+		where Sourcesys = 'CRMS'
+		and Sourcefiled = 'CERTTYPE') CERTTYPEMaping
+		on tgr.arlpcerttype = CERTTYPEMaping.Sourcecode
+		left join (select *
+		from pbcrs_report_code_mapping
+		where Sourcesys = 'CRMS'
+		and Sourcefiled = 'CERTTYPEEnt') CERTTYPEEntMaping
+		on tgr.arlpcerttype = CERTTYPEEntMaping.Sourcecode
+		group by tgr.acctcode) t8
+		on t8.acctcode = t.acctcode
+		where tl.datadate =to_date(#{queryRptDate}, 'yyyy-mm-dd')
+
+	</insert>
+
+	<insert id="addSxInter" parameterType="map">
+		insert into
+		PBCRS_DATA_COMPARE(field1,field2,field3,field4,field5,field6,field7,field8,field9,
+		field10,field11,field12,field13,field14,field15,field16,field17,DATA_TYPE,DATA_DT)
+		select 'D10025210H0005' field1,
+		to_char(t.datadate,'yyyymmdd') field2,
+		'3' field3,
+		'D10025210H0005' || t.creditserinalno field4,
+		t.entname field5,
+		ts.entcerttype field6,
+		ts.entcertnum field7,
+		nvl(CYCLEFLAGMapping.sys_code, t.LimLoopFlg) field8,
+		to_char(to_date(t.ConEffDate, 'yyyy/mm/dd'), 'yyyy-mm-dd') field9,
+		nvl(to_char(to_date(t.ConExpDate, 'yyyy/mm/dd'), 'yyyy-mm-dd'),
+		'2099-12-31') field10,
+		ceil(t.CreditLim) field11,
+		' ' field12,
+		' ' field13,
+		' ' field14,
+		' ' field15,
+		' ' field16,
+		'0' field17,
+		'data' DATA_TYPE ,
+		to_date(#{queryRptDate}, 'yyyy-mm-dd')
+		from pbcrs_datacrms_encreditinfo t
+		inner join pbcrs_datacrms_enbaseinfo ts
+		on t.sourcecustid = ts.sourcecustid
+		left join (select SC.SOURCECUSTID custid
+		from PBCRS_REPORT_SPECUSTID sc
+		where sc.sourcesys = 'MIS'
+		and sc.state = '1'
+		and sc.spe_type = '1') sc1 on t.sourcecustid = sc1.custid
+		left join (select *
+		from pbcrs_report_code_mapping
+		where Sourcesys = 'CRMS'
+		and Sourcefiled = 'CYCLEFLAG') CYCLEFLAGMapping
+		on t.LimLoopFlg = CYCLEFLAGMapping.Sourcecode
+
+		where t.ConExpDate >=
+		to_char(to_date(#{queryRptDate}, 'yyyy-mm-dd'), 'yyyy/mm/dd')
+		and t.constatus = '2020' and sc1.custid is null
+		and t.datadate = to_date(#{queryRptDate}, 'yyyy-mm-dd')
+		and ts.datadate = to_date(#{queryRptDate}, 'yyyy-mm-dd')
+	</insert>
+
+	<insert id="addDzyInter" parameterType="map">
+		insert into
+		PBCRS_DATA_COMPARE(field1,field2,field3,field4,field5,field6,field7,field8,field9,
+		field10,field11,field12,field13,field14,field15,field16,field17,DATA_TYPE,DATA_DT)
+		select distinct 'D10025210H0005' field1,
+		to_char(t.datadate,'yyyymmdd') field2,
+		'4' field3,
+		'D10025210H0005' || CCCODE field4,
+		t.entname field5,
+		t1.entcerttype field6,
+		t1.entcertnum field7,
+		nvl(GUARANTYTYPEMaping.Sys_Code, t.ContType) field8,
+		(case when trim(t.CcValDate) is null or t.CcValDate = t.ccexpdate or t.CcValDate > to_char(t.datadate,'yyyy-mm-dd') then
+             ld.opendate else
+             t.CcValDate end) field9, 
+             (case when trim(t.CcExpDate) is null or t.CcValDate = t.ccexpdate or t.ccexpdate > '2099-12-01' then
+              ld.duedate else
+             (case when t.CcExpDate>'2099-12-31' then
+               '2099-12-31' else
+             t.CcExpDate end)end) field10, 
+		ceil(t.ccamt) field11,
+		' ' field12,
+		' ' field13,
+		' ' field14,
+		' ' field15,
+		' ' field16,
+		'0' field17,
+		'data' DATA_TYPE ,
+		to_date(#{queryRptDate}, 'yyyy-mm-dd')
+		from pbcrs_datasln_enguarantycont t
+		inner join pbcrs_datasln_enbaseinfo t1
+		on t.sourcecustid = t1.sourcecustid
+		inner join (select distinct t.acctcode acctcode,t.duedate duedate,t.opendate opendate
+		from pbcrs_datasln_enloaninfo t
+		where t.closedate is null
+		and t.datadate = to_date(#{queryRptDate}, 'yyyy-mm-dd')
+		and t.acctcode not in
+		(select acctcode from pbcrs_datasln_encancelinfo where datadate &lt;=
+		to_date(#{queryRptDate}, 'yyyy-mm-dd'))) ld
+		on ld.acctcode = t.acctcode
+		left join (select *
+		from pbcrs_report_code_mapping
+		where Sourcesys = 'SLNENT'
+		and Sourcefiled = 'CONTTYPE') GUARANTYTYPEMaping
+		on t.ContType = GUARANTYTYPEMaping.Sourcecode
+		where t.CCSTATUS = '1'
+		and t.datadate = to_date(#{queryRptDate}, 'yyyy-mm-dd')
+		and t1.datadate = to_date(#{queryRptDate}, 'yyyy-mm-dd')
+		and t.CcValDate &lt;=to_char(to_date(#{queryRptDate}, 'yyyy-mm-dd'), 'yyyy-mm-dd') 
+ 		and t.ccexpdate >
+		to_char(to_date('2020-08-07', 'yyyy-mm-dd'), 'yyyy-mm-dd') 
+		union all
+		select distinct 'D10025210H0005' field1,
+		to_char(t.datadate,'yyyymmdd') field2,
+		'4' field3,
+		'D10025210H0005' || CCCODE field4,
+		t.entname field5,
+		t1.entcerttype field6,
+		t1.entcertnum field7,
+		nvl(GUARANTYTYPEMaping.Sys_Code, t.ContType) field8,
+		  (case when trim(t.CcValDate) is null or t.CcValDate = t.ccexpdate or t.CcValDate > to_char(t1.datadate,'yyyy/mm/dd') then
+        to_char(to_date(ld.opendate, 'yyyy/mm/dd'), 'yyyy-mm-dd') else
+        to_char(to_date(t.CcValDate, 'yyyy/mm/dd'), 'yyyy-mm-dd') end) field9, 
+       (case when trim(t.CcExpDate) is null or t.CcValDate = t.ccexpdate or t.ccexpdate > '2099/12/01' then
+         to_char(to_date(ld.duedate, 'yyyy/mm/dd'), 'yyyy-mm-dd') else
+        to_char(to_date(CHECKDATE(t.CcExpDate), 'yyyy/mm/dd'),'yyyy-mm-dd')end) field10, 
+		ceil(t.ccamt) field11,
+		' ' field12,
+		' ' field13,
+		' ' field14,
+		' ' field15,
+		' ' field16,
+		'0' field17,
+		'data' DATA_TYPE ,
+		to_date(#{queryRptDate}, 'yyyy-mm-dd')
+		from pbcrs_datacrms_enguarantycont t
+		inner join pbcrs_datacrms_enbaseinfo t1
+		on t.sourcecustid = t1.sourcecustid
+		inner join (select distinct t.acctcode acctcode,t.duedate duedate,t.opendate opendate
+		from pbcrs_datacrms_enloaninfo t
+		where t.closedate is null
+		and t.datadate = to_date(#{queryRptDate}, 'yyyy-mm-dd')
+		and t.busilines not in
+		(select prodid
+		from pbcrs_report_busilines_mapping bm
+		where bm.sourcesys = 'CRMS'
+		and bm.busitype = 'DC'
+		and bm.noguarflag = '1')
+		and t.acctcode not in
+		(select acctcode
+		from pbcrs_datacrms_encancelinfo where datadate &lt;=
+		to_date(#{queryRptDate}, 'yyyy-mm-dd')
+		union
+		select SC.SOURCECUSTID acctcode
+		from PBCRS_REPORT_SPECUSTID sc
+		where sc.sourcesys = 'MIS'
+		and sc.state = '1'
+		and sc.spe_type = '2')) ld
+		on ld.acctcode = t.acctcode
+		left join (select SC.SOURCECUSTID scustid from PBCRS_REPORT_SPECUSTID sc
+		where sc.sourcesys='MIS' and sc.state='1' and sc.spe_type='1') sc1
+		on sc1.scustid = t.sourcecustid
+		left join (select SC.SOURCECUSTID scustid from PBCRS_REPORT_SPECUSTID sc
+		where sc.sourcesys='MIS' and sc.state='1' and sc.spe_type='3') sc2
+		on sc2.scustid = t.cccode
+		left join (select *
+		from pbcrs_report_code_mapping
+		where Sourcesys = 'CRMS'
+		and sys_code_type = 'MotCltCtrType') GUARANTYTYPEMaping
+		on t.ContType = GUARANTYTYPEMaping.Sourcecode
+		where t.CCSTATUS = '030'
+		and t.datadate = to_date(#{queryRptDate}, 'yyyy-mm-dd')
+		and t1.datadate = to_date(#{queryRptDate}, 'yyyy-mm-dd')
+		and t.CcValDate &lt;=to_char(to_date(#{queryRptDate}, 'yyyy-mm-dd'), 'yyyy/mm/dd') 
+ 		and t.ccexpdate >
+		to_char(to_date('2020-08-07', 'yyyy-mm-dd'), 'yyyy/mm/dd') 
+		and t.ContType in ('01', '02', '04')
+		and sc1.scustid is null
+		and sc2.scustid is null
+	</insert>
+	
+	<select id="callPartition" parameterType="map">
+	   call pkg_pub_tools.AUTO_PARTITION(#{rpt},'pbcrs', 'PBCRS_DATA_COMPARE')
+	</select>
+	
+	<select id="getEntCompare" parameterType="map"
+		resultType="com.hkbank.pbcrs.model.DataComparisonEnd">
+		
+		select nvl(field1,' ') field1,nvl(field2,' ')field2,nvl(field3,' ')field3,nvl(field4,' ')field4,
+		nvl(field5,' ')field5,nvl(field6,' ')field6,nvl(field7,' ')field7,nvl(field8,' ')field8,nvl(field9,' ')field9,nvl(field10,' ')field10,
+		nvl(field11,' ')field11,nvl(field12,' ')field12,nvl(field13,' ')field13,nvl(field14,' ')field14,
+		nvl(field15,' ')field15,nvl(field16,' ')field16,nvl(field17,' ')field17,ARLPNAME arlpName,
+		ARLPCERTTYPE arlpCerttype,
+		ARLPCERTNUM arlpCertnum,
+		ARLPAMT arlpAmt from PBCRS_DATA_COMPARE t where t.data_dt = to_date(#{queryRptDate}, 'yyyy-mm-dd') and t.data_type = #{dataType}
+	
+	</select>
+</mapper>

@@ -1,0 +1,201 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.hkbank.pbcrs.mapper.PbcrsReportBusilinesMappingMapper">
+
+
+  
+  <sql id="sql_selectCont">
+  	 <if test="QueryBusiType !=null and QueryBusiType !=''">
+    	and bb.BUSITYPE = #{QueryBusiType}
+    </if>
+    <if test="QueryprodId !=null and QueryprodId !=''">
+    	and bb.PRODID = #{QueryprodId}
+    </if>
+     <if test="QueryprodDesc !=null and QueryprodDesc !=''">
+    	and bb.PRODIDDESC like '%${QueryprodDesc}%'
+    </if>
+    <if test="querySourceSys!=null and querySourceSys!=''">
+    	and bb.sourcesys = #{querySourceSys}
+    </if>
+  
+  	
+  </sql>
+  
+  <select id="selectAllbyContCount" resultType="int" parameterType="map">
+    select count(1)
+       from PBCRS_REPORT_BUSILINES_MAPPING bb
+		   where 1=1 
+
+			  	<include refid="sql_selectCont"></include>
+  </select>
+  
+  
+  <select id="selectAllbyContPage" resultType="map" parameterType="map">
+  
+    select * from (
+	    SELECT A.*, ROWNUM RN  from (
+			      select *
+		          from PBCRS_REPORT_BUSILINES_MAPPING bb
+			    where 1=1 
+			  	<include refid="sql_selectCont"></include>
+		  	) A
+	  	WHERE ROWNUM &lt;=${endindex}
+  	) where RN &gt;${startindex}
+    
+  </select>
+  
+    <select id="checkCount" resultType="int" parameterType="map">
+    
+  			<if test="type == 'busilines'">
+				select count(1) from pbcrs_report_busilines_mapping t where 
+				t.sourcesys =#{sourceSys} and t.prodid = #{prodId}
+			</if>
+			
+			<if test="type == 'codeMapping'">
+				select count(1) from pbcrs_report_code_mapping t where 
+				t.sourcesys =#{sourceSys} and t.SOURCEFILED = #{sourceFiled} and t.SOURCECODE = #{sourceCode}
+			</if>
+
+    
+  </select>
+  
+  <delete id="delCode" parameterType="map">
+  delete from pbcrs_report_busilines_mapping t where 
+  t.sourcesys =#{sourceSys} and t.prodid = #{prodId}
+  </delete>
+  
+  <!-- 码值参数保存 -->
+  <insert id="SaveRes" parameterType="map">
+  insert into PBCRS_REPORT_BUSILINES_MAPPING
+		(
+		<trim suffixOverrides=",">
+			<if test="sourceSys != null and sourceSys != ''">
+				SOURCESYS,
+			</if>
+			<if test="prodId != null and prodId != ''">
+				PRODID,
+			</if>
+			<!--<if test="BusiType != null and BusiType != ''">
+				BUSITYPE,
+			</if>-->
+			<!--<if test="acctType != null and acctType != ''">
+				ACCTTYPE,
+			</if>-->
+
+			<!--<if test="BusiLines != null and BusiLines != ''">
+				BUSILINES,
+			</if>
+			<if test="BusiDtlLines != null and BusiDtlLines != ''">
+				BUSIDTLLINES,
+			</if>-->
+			<if test="prodDesc != null and prodDesc != ''">
+				PRODIDDESC,
+			</if>
+			<if test="noGuarFlag != null and noGuarFlag != ''">
+				NOGUARFLAG,
+			</if>
+			<!--<if test="reportOverRedueFlag != null and reportOverRedueFlag != ''">
+				REPORTOVERDUEFLAG,
+			</if>	-->
+			<if test="isSubmission != null and isSubmission != ''">
+				IS_SUBMISSION,
+			</if>		
+		</trim>
+		)
+		values
+		(
+		<trim suffixOverrides=",">
+			<if test="sourceSys != null and sourceSys != ''">
+				#{sourceSys},
+			</if>
+			<if test="prodId != null and prodId != ''">
+				#{prodId},
+			</if>			
+			<!--<if test="BusiType != null and BusiType != ''">
+				#{BusiType},
+			</if>-->
+			<!--<if test="acctType != null and acctType != ''">
+				#{acctType},
+			</if>-->
+			<!--<if test="BusiLines != null and BusiLines != ''">
+				#{BusiLines},
+			</if>
+			<if test="BusiDtlLines != null and BusiDtlLines != ''">
+				#{BusiDtlLines},
+			</if>-->
+			<if test="prodDesc != null and prodDesc != ''">
+				#{prodDesc},
+			</if>
+			<if test="noGuarFlag != null and noGuarFlag != ''">
+				#{noGuarFlag},
+			</if>	
+			<!--<if test="reportOverRedueFlag != null and reportOverRedueFlag != ''">
+				#{reportOverRedueFlag},
+			</if>	-->
+			<if test="isSubmission != null and isSubmission != ''">
+				#{isSubmission},
+			</if>			
+			
+		</trim>
+		)
+  </insert>
+<!-- 征信码表保存 -->
+  <insert id="SaveCode" parameterType="map">
+    insert into PBCRS_REPORT_CODE_MAPPING
+		(
+		<trim suffixOverrides=",">
+			<if test="sourceSys != null and sourceSys != ''">
+				SOURCESYS,
+			</if>
+			<if test="sourceFiled != null and sourceFiled != ''">
+				SOURCEFILED,
+			</if>
+			<if test="sourceCode != null and sourceCode != ''">
+				SOURCECODE,
+			</if>
+			<if test="sysCodeType != null and sysCodeType != ''">
+				SYS_CODE_TYPE,
+			</if>
+
+			<if test="sysCode != null and sysCode != ''">
+				SYS_CODE,
+			</if>
+			<if test="sourceDesc != null and sourceDesc != ''">
+				SOURCEDESC,
+			</if>
+			<if test="sysDesc != null and sysDesc != ''">
+				SYS_DESC,
+			</if>			
+		</trim>
+		)
+		values
+		(
+		<trim suffixOverrides=",">
+			<if test="sourceSys != null and sourceSys != ''">
+				#{sourceSys},
+			</if>
+			<if test="sourceFiled != null and sourceFiled != ''">
+				#{sourceFiled},
+			</if>			
+			<if test="sourceCode != null and sourceCode != ''">
+				#{sourceCode},
+			</if>
+			<if test="sysCodeType != null and sysCodeType != ''">
+				#{sysCodeType},
+			</if>
+			<if test="sysCode != null and sysCode != ''">
+				#{sysCode},
+			</if>
+			<if test="sourceDesc != null and sourceDesc != ''">
+				#{sourceDesc},
+			</if>
+			<if test="sysDesc != null and sysDesc != ''">
+				#{sysDesc},
+			</if>
+				
+			
+		</trim>
+		)
+  </insert>
+
+</mapper>

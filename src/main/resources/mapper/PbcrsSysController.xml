@@ -1,0 +1,87 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+
+<mapper namespace="com.hkbank.pbcrs.mapper.PbcrsSysConTrollerMapper">
+
+
+
+	
+	
+	<select id="findSysConByType" parameterType="map" resultType="map">
+		select con_id,con_name,proc_name,sourcesys,case when t.con_type = 'D' then '集市层' when t.con_type = 'R' then '报送层' when t.con_type = 'F' then '文件生成' end type,
+		id,report_code
+		 from PBCRS_SYS_CONTROLLER t
+		where valid_flag = '1' and parent_id = #{parent_id}
+  		order by t.CON_ORDER asc
+	</select>
+	
+	
+    <insert id="insertConInfo"  parameterType="map">
+     insert into PBCRS_SYS_CONTROLLER_INFO(web_proc_id,con_id,deal_dt,insert_user_name,insert_user_no,state,etl_date,infrectype)
+     values(#{webProcId},#{conId},to_char(sysdate,'yyyy-MM-dd HH24:mi:ss'),#{insertUserName},#{insertUserNo},#{state},#{etlDate},#{infRecType})
+    </insert>
+
+	<update id="updSysConInfo" parameterType="map">
+	  update PBCRS_SYS_CONTROLLER_INFO set DEALEND_DT = to_char(sysdate,'yyyy-MM-dd HH24:mi:ss'),STATE=#{state} where web_proc_id = #{webProcId}
+	</update>
+	
+	<select id="execProc" parameterType="map" statementType="CALLABLE">
+	${procString}
+	</select>
+	
+	
+	<select id="getEtlLogInfoCount" parameterType="map" resultType="int">
+		
+		select  count(1)
+
+         from PBCRS_SYS_CONTROLLER_INFO t 
+         inner join PBCRS_SYS_CONTROLLER t1 on t.con_id = t1.con_id
+		 
+	</select>
+	
+	<select id="getEtlLogInfo" parameterType="map" resultType="map">
+		
+		
+		select t.web_proc_id,
+		       t.insert_user_no,
+		       t.insert_user_name,
+		       to_char(to_date(t.etl_date,'yyyymmdd'),'yyyy-mm-dd') as etl_date,
+		       t1.con_name,
+		       t.deal_dt,
+		       t.dealend_dt,
+		       case when t.state = '0' then '执行中'
+		            when t.state = '1' then '执行成功'
+		            when t.state = '2' then '执行失败'
+		       else '' end state,
+		       case when t1.sourcesys = 'IND' then '个人'
+		            when t1.sourcesys = 'ENT' then '企业'
+		       else '' end sourcesys
+		
+        from PBCRS_SYS_CONTROLLER_INFO t 
+        left join PBCRS_SYS_CONTROLLER t1 on t.con_id = t1.con_id
+		 
+	</select>
+	
+	
+	<select id="findLogDetail" parameterType="string" resultType="map">
+		
+		
+		select * from (
+					select  t1.log_type,t1.proc_name,t1.log_info from PBCRS_SYS_CONTROLLER_INFO t 
+					inner join PBCRS_CM_PROC_LOG t1 on t.web_proc_id = t1.web_proc_id
+					where t.web_proc_id = #{webProcId}
+					order by t1.log_nbr asc
+		)
+	union all 
+		select * from (
+					select 'info',t2.report_name,t2.log_info from PBCRS_SYS_CONTROLLER_INFO t  
+					inner join   PBCRS_REPORT_CONDITION t1 on t.web_proc_id = t1.web_proc_id
+					inner join PBCRS_REPORT_LOG t2 on t1.CONDITIONID = t2.conditionid
+					where t.web_proc_id = #{webProcId}
+					order by t2.conditionid,t2.log_nbr
+		)
+		 
+	</select>
+	
+
+</mapper>

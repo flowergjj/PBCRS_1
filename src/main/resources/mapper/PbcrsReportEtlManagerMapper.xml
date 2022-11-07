@@ -1,0 +1,167 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.hkbank.pbcrs.mapper.PbcrsReportEtlManagerMapper">
+
+	<sql id="sql_query">
+	        <if test = "etlType != null and etlType != ''">
+	           and proc_name like '%'||#{proc_name}||#{etlType}||'%' 
+			   and log_info like '%[00]开始运行%'
+	        </if>
+	        <if test = "etlType == null or etlType == ''">
+				<if test="proc_name != null and proc_name != '' ">
+				 	and proc_name like '%'||#{proc_name}||'%' 
+				 	and log_info like '%总调度执行开始%'
+				</if>
+			</if>
+			<if test="etlDate != null and etlDate != ''">
+				  and ETL_TX_DATE =to_date(#{etlDate},'yyyy-mm-dd')
+			</if>
+			<!-- <if test="dsDate != null and dsDate != ''">
+				  and to_char(cast(cast(LOG_TIME as timestamp) as date),'yyyy-mm-dd HH24:mi:ss') > #{dsDate}
+			</if> -->
+			
+	</sql>
+	<select id="getDataDate" parameterType="Map" resultType="Map">
+	select r.datatime text,nvl(t.datatime,'2099-12-31 00:00:00') id from
+	        (
+				select to_char(cast(cast(LOG_TIME as timestamp) as date),'yyyy-mm-dd HH24:mi:ss') datatime ,
+					row_number() over( order by to_char(cast(cast(LOG_TIME as timestamp) as date),'yyyy-mm-dd HH24:mi:ss') asc) rn 　
+				from pbcrs_cm_proc_log l
+      			where  1=1
+      			<include refid="sql_query" />    
+             ) r
+             left join 
+             (
+   				select to_char(cast(cast(LOG_TIME as timestamp) as date),'yyyy-mm-dd HH24:mi:ss') datatime ,
+   					row_number() over( order by to_char(cast(cast(LOG_TIME as timestamp) as date),'yyyy-mm-dd HH24:mi:ss') asc) rn 　
+				from pbcrs_cm_proc_log l
+      			where  1=1
+      			<include refid="sql_query" />     
+ 			 ) t
+ 	 on r.rn+1 = t.rn
+ 	 order by r.datatime
+		<!-- select to_char(cast(cast(LOG_TIME as timestamp) as date),'yyyy-mm-dd HH24:mi:ss') as datatime　
+			from pbcrs_cm_proc_log l
+      	where  1=1
+		<include refid="sql_query" />
+		order by LOG_TIME -->
+	</select>
+	
+	<select id="getByEtlType" parameterType="Map" resultType="Map">
+		select to_char(cast(cast(LOG_TIME as timestamp) as date),'yyyy-mm-dd HH24:mi:ss') as datatime　 from pbcrs_cm_proc_log
+		where PROC_NAME like '%'||#{procName}||'%'
+		and log_info like '%开始运行%'
+		and ETL_TX_DATE = to_Date(#{etlDate},'yyyy-mm-dd')
+		order by  LOG_NBR 
+	</select>
+	
+	<select id="getDsEtlLog" parameterType="Map" resultType="Map">
+		select LOG_TYPE,LOG_INFO,to_char(cast(cast(LOG_TIME as timestamp) as date),'yyyy-mm-dd HH24:mi:ss') as time　from pbcrs_cm_proc_log
+			where etl_tx_date = to_date(#{etlDate},'yyyy-mm-dd')
+			    <if test = "etlType != null and etlType != ''">
+				  and proc_name like '%'||#{ds_proc_name}||#{etlType}||'%'
+			    </if>
+			   <if test = "etlType == null or etlType == ''">
+				  and proc_name like '%'||#{ds_proc_name}||'%'
+			   </if>
+				  and to_char(cast(cast(LOG_TIME as timestamp) as date),'yyyy-mm-dd HH24:mi:ss') 
+				  &gt;= #{dsDate}
+				  and to_char(cast(cast(LOG_TIME as timestamp) as date),'yyyy-mm-dd HH24:mi:ss') 
+				  &lt;${char}#{nextDsDate}
+  				  order by LOG_NBR
+	</select>
+	
+	<select id="getRptEtlLog" parameterType="Map" resultType="Map">
+		select LOG_TYPE,LOG_INFO,to_char(cast(cast(LOG_TIME as timestamp) as date),'yyyy-mm-dd HH24:mi:ss') as time　from pbcrs_cm_proc_log
+			where etl_tx_date = to_date(#{etlDate},'yyyy-mm-dd')
+			      <if test = "etlType != null and etlType != ''">
+				     and proc_name like '%'||#{rpt_proc_name}||substr(#{etlType},0,length(#{etlType})-1)||'%' 
+				  </if>
+				   <if test = "etlType == null or etlType == ''">
+				     and proc_name like '%'||#{rpt_proc_name}||'%' 
+				  </if>
+				  and to_char(cast(cast(LOG_TIME as timestamp) as date),'yyyy-mm-dd HH24:mi:ss') 
+				  &gt;=#{rptDate}
+				  and to_char(cast(cast(LOG_TIME as timestamp) as date),'yyyy-mm-dd HH24:mi:ss') 
+				  &lt;${char}#{nextRptDate}
+  				  order by LOG_NBR
+	</select>
+	
+	<select id="getErrorDate" parameterType="Map" resultType="Map">
+		select * from (
+			select to_char(cast(cast(LOG_TIME as timestamp) as date),'yyyy-mm-dd HH24:mi:ss') as time　from pbcrs_cm_proc_log
+			where etl_tx_date = to_date(#{etlDate},'yyyy-mm-dd')
+			      <if test = "etlType != null and etlType != ''">
+				     and proc_name like '%'||#{proc_name}||substr(#{etlType},0,length(#{etlType})-1)||'%' 
+				  </if>
+				   <if test = "etlType == null or etlType == ''">
+				     and proc_name like '%'||#{rpt_proc_name}||'%' 
+				  </if>
+				  and to_char(cast(cast(LOG_TIME as timestamp) as date),'yyyy-mm-dd HH24:mi:ss') 
+				  &gt;=#{rptDate}
+				  and log_type = 'ERROR' 
+				  order by LOG_TIME asc
+			) where rownum = '1'
+	</select>
+	
+	<sql id="check_query">
+			<if test="checkReportType != null and checkReportType != ''">
+				 and upper(log.CHECKFUNC) like '%'||#{checkReportType}||'%'
+			</if>
+			<if test="pEtlDate != null and pEtlDate != ''  ">
+				and P_ETL_DATE = replace(#{pEtlDate},'-','')
+			</if>
+	</sql>
+	
+	<select id="getCheckAllList" parameterType="Map" resultType="Map">
+		select * from (
+			select r.*,rownum rn from (
+				select log.msgtype, log.checkfunc, count(1) total, msg.msg,max(seqno),max(log.p_etl_date) p_etl_date
+  				from pbcrs_report_check_log log
+ 				left join pbcrs_report_msg_code msg on log.checkfunc = msg.checkfunc
+ 				where log.checkfunc not like '%Continue%'
+      				 <include refid="check_query" />  
+ 				group by log.msgtype, log.checkfunc, msg.msg
+ 				order by log.msgtype ,log.checkfunc
+ 			)r where rownum &lt;#{endindex}
+ 	    ) where rn &gt;=#{startindex}
+	</select>
+	
+	<select id="getCheckByGroup" parameterType="Map" resultType="Map">
+		select upper(substr(log.checkfunc,0,instr(log.checkfunc,'.')-1)) checkfunc, count(1) total,max(log.p_etl_date) p_etl_date
+          from pbcrs_report_check_log log
+        left join pbcrs_report_msg_code msg on log.checkfunc = msg.checkfunc
+        where log.checkfunc not like '%Continue%'
+        and p_etl_date = replace(#{etl_date},'-','')
+        group by  substr(log.checkfunc,0,instr(log.checkfunc,'.')-1)
+	</select>
+	
+	<select id="getCheckAllCount" parameterType="Map" resultType="int">
+				select count(1) from (select log.msgtype, log.checkfunc, count(1), msg.msg,max(seqno)
+  				from pbcrs_report_check_log log
+ 				left join pbcrs_report_msg_code msg on log.checkfunc = msg.checkfunc
+ 				where log.checkfunc not like '%Continue%'
+      				 <include refid="check_query" />  
+ 				group by log.msgtype, log.checkfunc, msg.msg
+ 				order by log.msgtype ,log.checkfunc		
+ 				)	
+	</select>
+	
+	<select id="getErrorPKCount" parameterType="Map" resultType="int">
+		select count(1)
+		from pbcrs_report_check_log
+		where CHECKFUNC =#{CHECKFUNC}
+			  and P_ETL_DATE = #{P_ETL_DATE}
+	</select>
+	
+	<select id="getErrorPKList" parameterType="Map" resultType="Map">
+		select * from (
+			select r.*,rownum rn from (
+				select SEQNO
+				from pbcrs_report_check_log
+				where CHECKFUNC =#{CHECKFUNC}
+			  		and P_ETL_DATE = #{P_ETL_DATE}
+ 			)r where rownum &lt;#{endindex}
+ 	    ) where rn &gt;=#{startindex}
+	</select>
+</mapper>

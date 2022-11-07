@@ -1,0 +1,150 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+
+<mapper namespace="Org">
+
+	<select id="getAllOrgCounts" parameterType="map" resultType="int">
+		SELECT count(*) from PBCRS_SYS_ORG t where 1=1
+		<if test="orgID != null and orgID != ''">
+		and sys_org_id = #{orgID}
+        </if>
+		<if test="orgName != null and orgName != ''">
+			and sys_org_name like '%${orgName}%'
+		</if>
+	</select>
+	
+	<select id="findAllOrg" parameterType="map" resultType="map">
+		select
+		SYS_ORG_ID as orgID,
+		SYS_ORG_NAME as orgName,
+		CREATEUSER ,
+		to_char(CREATEDATE ,'yyyy-mm-dd HH24:MI:SS') as CREATEDATE
+		from PBCRS_SYS_ORG t
+		where 1=1
+		<if test="orgID != null and orgID != ''">
+		and sys_org_id = #{orgID}
+        </if>
+        <if test="orgName != null and orgName != ''">
+		and sys_org_name like '%${orgName}%'
+        </if>
+		ORDER BY
+		sys_org_id
+	</select>
+	
+	<select id="getOrgCountsById" resultType="int" parameterType="map">
+		SELECT
+		count(*)
+		FROM
+		PBCRS_SYS_ORG
+		where 1=1
+		and sys_org_id = #{orgID}
+	</select>
+	
+	<insert id="createOrg" parameterType="Map">
+		INSERT INTO
+			PBCRS_SYS_ORG
+		(SYS_ORG_ID,
+		 SYS_ORG_NAME,
+		 CREATEUSER,
+		 CREATEDATE)
+		VALUES
+		(#{orgID},
+		 #{orgName},
+		 #{updateUser},
+		 #{updateDate})
+	</insert>
+	
+	<select id="getOrgLogSeqNo" resultType="int">
+	select PBCRS_SYS_ORG_LOG_SER.Nextval  as "NEXTVAL" from dual
+		<!-- select nextval('SEQ_PBCRS_SYS_ORG_LOG') NEXTVAL -->
+	</select>
+	
+	<insert id="createOrgLog" parameterType="Map">
+		INSERT INTO
+		PBCRS_SYS_ORG_LOG
+		(SERIALNO,
+		SYS_ORG_ID,
+		SYS_ORG_NAME,
+		RELATIVEORGID,
+		ADMINISTRATIVEREGION,
+		POSTALCODE,
+		ADDRESS,
+		UPDATEUSER,
+		UPDATEDATE,
+		DELFLAG)
+		VALUES
+		(#{NEXTVAL},
+		#{orgID},
+		#{orgName},
+		#{relativeOrgID},
+		#{adminRegion},
+		#{postcode},
+		#{address},
+		#{updateUser},
+		#{updateDate},
+		#{delFlag})
+	</insert>
+	
+	<update id="modifyOrg" parameterType="Map">
+		UPDATE PBCRS_SYS_ORG SET
+		SYS_ORG_ID = #{orgID},
+		SYS_ORG_NAME = #{orgName},
+		RELATIVEORGID = #{relativeOrgID},
+		ADMINISTRATIVEREGION = #{adminRegion},
+		POSTALCODE = #{postcode},
+		ADDRESS = #{address}
+		WHERE
+		sys_org_id =#{orgID}
+	</update>
+	
+	<select id="getOrgInfoById" parameterType="map" resultType="map">
+		SELECT 
+		t.SYS_ORG_ID as "orgID",
+		t.SYS_ORG_NAME as "orgName",
+		t.RELATIVEORGID as "relativeOrgID",
+		t.ADMINISTRATIVEREGION as "adminRegion",
+		t.POSTALCODE as "postcode",
+		t.ADDRESS as "address"
+		from PBCRS_SYS_ORG t
+		where t.sys_org_id = #{orgID}
+	</select>
+	
+	<delete id="deleteOrg" parameterType="map">
+		delete from
+		PBCRS_SYS_ORG where sys_org_id=#{orgID}
+	</delete>
+	
+	<select id="getOrgTree" parameterType="map" resultType="map">
+		SELECT
+	         org.sys_org_id      AS  "id",
+	         org.sys_org_name    AS  "text"
+        FROM
+        	 PBCRS_SYS_ORG org
+       WHERE
+        <if test="id != null and id != ''">
+              	org.relativeorgid = #{id}
+         </if>
+         <if test="id == null or id == ''">
+              	org.relativeorgid = '0'
+         </if>
+    ORDER BY
+        	 org.sys_org_id asc
+	</select>
+	
+	<select id="getOrgTreeCount" parameterType="map" resultType="int">
+	  SELECT
+			 count(org.sys_org_id)
+		FROM
+        	 PBCRS_SYS_ORG org
+       WHERE
+        <if test="id != null and id != ''">
+              	org.relativeorgid = #{id}
+         </if>
+         <if test="id == null or id == ''">
+              	org.relativeorgid = '0'
+         </if>
+    ORDER BY
+        	 org.sys_org_id asc
+	</select>
+	
+</mapper>

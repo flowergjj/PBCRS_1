@@ -1,0 +1,57 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.hkbank.pbcrs.mapper.PbcrsReportFieldMappingMapper">
+	<resultMap id="BaseResultMap"
+		type="com.hkbank.pbcrs.model.PbcrsReportFieldMapping">
+		<result column="REPORT_TYPE" jdbcType="VARCHAR" property="reportType" />
+		<result column="FIELD_NAME" jdbcType="VARCHAR" property="fieldName" />
+		<result column="METHOD_NAME" jdbcType="VARCHAR" property="methodName" />
+		<result column="SERVICE_NAME" jdbcType="VARCHAR" property="serviceName" />
+		<result column="MAPPER_NAME" jdbcType="VARCHAR" property="mapperName" />
+		<result column="MAPPER_METHOD_NAME" jdbcType="VARCHAR"
+			property="mapperMethodName" />
+		<result column="REPORT_ID" jdbcType="VARCHAR" property="reportId" />
+		<result column="COMMENTS" jdbcType="VARCHAR" property="comments" />
+	</resultMap>
+	<select id="getMapping" parameterType="map" resultMap="BaseResultMap">
+		select REPORT_TYPE reportType,FIELD_NAME fieldName,METHOD_NAME
+		methodName,SERVICE_NAME serviceName,MAPPER_NAME mapperName,
+		MAPPER_METHOD_NAME mapperMethodName,REPORT_ID,comments from PBCRS_REPORT_FIELD_MAPPING
+		where REPORT_TYPE =#{reportType}
+		<if test="fieldName != null and  fieldName!=''">
+			and
+			FIELD_NAME = #{fieldName}
+		</if>
+
+	</select>
+
+	<select id="listField" parameterType="map" resultMap="BaseResultMap">
+		select REPORT_TYPE reportType,FIELD_NAME fieldName,METHOD_NAME
+		methodName,SERVICE_NAME serviceName,MAPPER_NAME mapperName,
+		MAPPER_METHOD_NAME mapperMethodName,REPORT_ID reportId
+		,comments from PBCRS_REPORT_FIELD_MAPPING
+		where REPORT_TYPE =#{reportType} and METHOD_NAME in(${methodName})
+	</select>
+
+	<select id="getFirstCombox" resultType="map">
+		select distinct REPORT_TYPE text,REPORT_TYPE id from
+		PBCRS_REPORT_FIELD_MAPPING t
+		where 1 = 1 
+		<if test="comments != null and comments != ''">
+		and t.comments like '%${comments}%'
+		</if>
+	</select>
+
+	<select id="getSecondCombox" parameterType="map" resultType="map">
+		select distinct SGMT_NAME text,METHOD_NAME id from
+		PBCRS_REPORT_FIELD_MAPPING
+		where 1=1
+		<if test="comments != null and comments != ''">
+		and comments like '%${comments}%'
+		</if>
+		<if test="REPORT_TYPE != null and REPORT_TYPE != ''">
+		and REPORT_TYPE = #{REPORT_TYPE}
+		</if>
+		
+	</select>
+</mapper>

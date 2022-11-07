@@ -1,0 +1,136 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+
+<mapper namespace="SysNotice">
+
+	<select id="getNotices" parameterType="map" resultType="map">
+		select t.* from (
+		select
+		t.NOTICE_ID,
+		t.TITLE,
+		t.BUSSINESS_CODE,
+		t.OPER_USER,
+		to_char(t.oper_time,'yyyy-mm-dd') as "OPER_TIME"
+		from
+		PBCRS_sys_notice t
+		where t.status = '1'
+		order by t.OPER_TIME desc
+		) t
+		
+	</select>
+	
+	<sql id="listsql">
+		<if test="NOTICE_ID != null and NOTICE_ID != ''">
+			and t.NOTICE_ID like '%${NOTICE_ID}%'
+		</if>
+		<if test="TITLE !=null and TITLE != ''">
+			and t.TITLE like '%${TITLE}%'
+		</if>
+	</sql>
+
+	<select id="noticeList" parameterType="map" resultType="map">
+		select
+		t.NOTICE_ID as "NOTICE_ID",
+		t.TITLE as "TITLE",
+		t.BUSSINESS_CODE as
+		"BUSSINESS_CODE",
+		t.STATUS as "STATUS",
+		t.OPER_USER as "OPER_USER",
+		to_char(t.OPER_TIME, 'yyyy-mm-dd HH24:MI:SS') as "OPER_TIME",
+		u.username as "OPER_NAME",
+		#{USERID} as "USERID"
+		from
+		PBCRS_sys_notice t,PBCRS_sys_user u
+		where
+		u.userid = OPER_USER
+		<include refid="listsql"></include>
+		order by
+		t.notice_id desc
+	</select>
+
+	<select id="noticeListCounts" parameterType="map" resultType="int">
+		select count(*)
+		from
+		PBCRS_sys_notice t,PBCRS_sys_user u
+		where u.userid =
+		OPER_USER
+		<include refid="listsql"></include>
+		order by
+		t.notice_id desc
+	</select>
+
+	<insert id="saveNotice" parameterType="Map">
+		INSERT INTO
+		PBCRS_sys_notice
+		(NOTICE_ID,TITLE,CONTENT,BUSSINESS_CODE,OPER_TIME,STATUS,OPER_USER)
+		VALUES
+		(#{NOTICE_ID},#{TITLE},#{CONTENT},#{BUSSINESS_CODE},#{OPER_TIME},#{STATUS},#{OPER_USER})
+	</insert>
+
+	<update id="updateNotice" parameterType="Map">
+		UPDATE PBCRS_sys_notice
+		SET
+		TITLE =#{TITLE},
+		CONTENT=#{CONTENT},
+		BUSSINESS_CODE=#{BUSSINESS_CODE},
+		OPER_TIME=#{OPER_TIME},
+		STATUS=#{STATUS},
+		OPER_USER=#{OPER_USER}
+		WHERE
+		NOTICE_ID =#{NOTICE_ID}
+	</update>
+
+	<delete id="deleteNotice" parameterType="Map">
+		delete from
+		PBCRS_sys_notice 
+		WHERE
+		NOTICE_ID =#{NOTICE_ID}
+	</delete>
+
+	<select id="getNoticeByID" resultType="map" parameterType="Map">
+		select
+		t.NOTICE_ID as "NOTICE_ID",
+		t.CONTENT as "CONTENT",
+		t.TITLE as
+		"TITLE",
+		t.BUSSINESS_CODE
+		as
+		"BUSSINESS_CODE",
+		t.STATUS as "STATUS",
+		t.OPER_USER as "OPER_USER",
+		t.OPER_TIME as "OPER_TIME",
+		u.username as
+		"OPER_NAME"
+		from
+		PBCRS_sys_notice t,PBCRS_sys_user u
+		where u.userid =
+		OPER_USER
+		and
+		t.NOTICE_ID = #{NOTICE_ID}
+	</select>
+
+	<select id="getNoticeSeq" resultType="map" parameterType="Map">
+		SELECT SEQ_PBCRS_SYS_NOTICE.nextval SEQNO from dual
+	</select>
+
+	<update id="updateNoticeImg" parameterType="map">
+		UPDATE
+		PBCRS_SYS_NOTICE t
+		SET
+		t.BUSSINESS_CODE = #{BUSSINESS_CODE}
+		WHERE
+		t.NOTICE_ID = #{NOTICE_ID}
+	</update>
+
+
+	<select id="findImgList" parameterType="map" resultType="map">
+		SELECT
+		arch.ac_img_id AS "imgId",
+		arch.ac_old_name AS "imgName"
+		FROM
+		PBCRS_archives_control arch
+		WHERE
+		arch.bussiness_code = #{bussCode}
+	</select>
+
+</mapper>

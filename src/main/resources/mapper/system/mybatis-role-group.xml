@@ -1,0 +1,124 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+
+<mapper namespace="RoleGroup">
+
+
+	<select id="findAllRoleGroup" parameterType="map" resultType="map">
+		select t.groupid       as "groupId",
+		       t.groupname     as "groupName",
+		       t.status        as "status",
+		       s.sys_code_desc as "groupStatus"
+		  from SRMS_SYS_ROLE_GROUP_INFO t
+		  left join SRMS_sys_code s
+		    on s.sys_code = t.status
+		   and s.sys_code_type = 'ROLE_GROUP_STATUS'
+	  ORDER BY t.status desc,t.groupid desc
+	</select>
+	
+	<select id="findAllRoleGroupCounts" parameterType="map" resultType="int">
+		select count(*)
+		  from SRMS_SYS_ROLE_GROUP_INFO t
+		  left join SRMS_sys_code s
+		    on s.sys_code = t.status
+		   and s.sys_code_type = 'ROLE_GROUP_STATUS'
+	  ORDER BY t.status desc,t.groupid desc
+	</select>
+	
+	
+	<select id="findRoleGroupStatusCode" resultType="map">
+		select sc.sys_code as id,sc.sys_code_desc as text 
+		from SRMS_sys_code sc
+		where sc.sys_code_type = 'ROLE_GROUP_STATUS'
+	</select>
+	
+	<select id="findRoleList" resultType="map">
+		select t.roleid     as "roleId",
+		       t.rolename   as "roleName",
+		       t.status     as "status",
+		       t.role_level as "level"
+		  from SRMS_sys_role_info t
+		 where 1=1
+		   and t.status = '0'
+		 order by t.role_order
+	</select>
+	
+	<select id="getGroupSeqNo" parameterType="map" resultType="map">
+		SELECT nextval('SRMS_SYS_ROLE_GROUP_INFO') NEXTVAL
+	</select>
+	
+	<insert id="saveRoleGroupInfo" parameterType="Map">
+		INSERT INTO
+		SRMS_SYS_ROLE_GROUP_INFO
+		(GROUPID,GROUPNAME,STATUS,UPDATEUSER,UPDATEDATE)
+		VALUES
+		(#{seqNo},#{groupName},#{status},#{updateUser},#{updateDate})
+	</insert>
+	
+	<insert id="saveRoleGroupInfoLog" parameterType="Map">
+		INSERT INTO
+		SRMS_SYS_ROLE_GROUP_INFO_LOG
+		(SERIALNO,GROUPID,GROUPNAME,STATUS,UPDATEUSER,UPDATEDATE,DELFLAG)
+		VALUES
+		(#{logSeqNo},#{seqNo},#{groupName},#{status},#{updateUser},#{updateDate},#{delFlag})
+	</insert>
+	
+	<insert id="saveRoleGroup" parameterType="Map">
+		INSERT INTO
+		SRMS_SYS_ROLE_GROUP
+		(GROUPID,ROLEID,UPDATEUSER,UPDATEDATE)
+		VALUES
+		(#{seqNo},#{roleId},#{updateUser},#{updateDate})
+	</insert>
+	
+	<insert id="saveRoleGroupLog" parameterType="Map">
+		INSERT INTO
+		SRMS_SYS_ROLE_GROUP_LOG
+		(SERIALNO,GROUPID,ROLEID,UPDATEUSER,UPDATEDATE)
+		VALUES
+		(#{logSeqNo},#{seqNo},#{roleId},#{updateUser},#{updateDate})
+	</insert>
+	
+	<select id="findRoleListByGroupId" resultType="map" parameterType="Map">
+		select t.roleid   as "roleId",
+		       t.rolename as "roleName",
+		       g.groupid  as "groupId"
+		  from SRMS_sys_role_info t
+		  left join SRMS_sys_role_group g
+		    on g.roleid = t.roleid
+		   and g.groupid = #{groupId}
+		 where 1 = 1
+		   and t.status = '0'
+		 order by t.role_order
+	</select>
+	
+	<update id="updateRoleGroupInfo" parameterType="Map">
+		UPDATE SRMS_SYS_ROLE_GROUP_INFO SET
+		GROUPNAME =#{groupName},
+		STATUS=#{status},
+		UPDATEUSER=#{updateUser},
+		UPDATEDATE=#{updateDate}
+		WHERE
+		GROUPID =#{groupId}
+	</update>
+	
+	<delete id="deleteRoleGroup" parameterType="Map">
+		delete from SRMS_SYS_ROLE_GROUP t
+		WHERE
+		t.GROUPID =#{groupId}
+	</delete>
+	<delete id="deleteRoleGroupInfo" parameterType="Map">
+		delete from SRMS_SYS_ROLE_GROUP_INFO t
+		WHERE
+		t.GROUPID =#{groupId}
+	</delete>
+	
+	<select id="findRoleInfoByGroupId" resultType="map" parameterType="Map">
+		select t.groupid       as "groupId",
+		       t.groupname     as "groupName",
+		       t.status        as "status"
+		  from SRMS_SYS_ROLE_GROUP_INFO t
+		 where 1=1
+		   and t.groupid = #{groupId}
+	</select>
+</mapper>

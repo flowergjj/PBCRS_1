@@ -1,0 +1,99 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.hkbank.pbcrs.mapper.PbcrsReportInctrctmdfcMapper">
+	<resultMap id="BaseResultMap" type="com.hkbank.pbcrs.model.PbcrsReportInctrctmdfc">
+		<id column="BSSGMTSEQNO" jdbcType="VARCHAR" property="InCtrctMdfcSeqNo" />
+		<id column="MDFCSGMTCODE" jdbcType="VARCHAR" property="MdfcSgmtCode" />
+		
+		<association property="InCtrctMdfcBsSgmt"
+			javaType="com.hkbank.pbcrs.model.PbcrsReportInctrctmdfcbssgmt">
+			<id column="BSSGMTSEQNO" jdbcType="VARCHAR" property="BsSgmtSeqNo" />
+		    <id column="MDFCSGMTCODE" jdbcType="VARCHAR" property="MdfcSgmtCode"/> 
+			<result column="INFRECTYPE" jdbcType="VARCHAR" property="InfRecType" />
+			<result column="MODRECCODE" jdbcType="VARCHAR" property="ModRecCode" />
+			<result column="RPTDATE" jdbcType="VARCHAR" property="RptDate" />
+			<result column="REPORTFLAG" jdbcType="VARCHAR" property="reportflag" />
+		</association>
+		<association property="InCtrMdfMdfSgmt"
+			javaType="com.hkbank.pbcrs.model.PbcrsReportInctrmdfmdfsgmt">
+			<id column="BSSGMTSEQNO" jdbcType="VARCHAR" property="MdfcSgmtRefSeqNo" />
+			<!-- <id column="MDFCSGMTCODE" jdbcType="VARCHAR" property="MdfcSgmtCode" 
+				/> -->
+			<association property="PbcrsReportCtrctbssgmtList"
+				javaType="com.hkbank.pbcrs.model.PbcrsReportCtrctbssgmt">
+				<id column="CTRCTBSSGMTSEQNO" jdbcType="VARCHAR" property="CtrctBsSgmtSeqNo" />
+				<result column="INFRECTYPEBASE" jdbcType="VARCHAR" property="InfRecType" />
+				<result column="CONTRACTCODE" jdbcType="VARCHAR" property="ContractCode" />
+				<result column="RPTDATEBASE" jdbcType="VARCHAR" property="RptDate" />
+				<result column="RPTDATECODE" jdbcType="VARCHAR" property="RptDateCode" />
+				<result column="NAME" jdbcType="VARCHAR" property="Name" />
+				<result column="IDTYPE" jdbcType="VARCHAR" property="IDType" />
+				<result column="IDNUM" jdbcType="VARCHAR" property="IDNum" />
+				<result column="MNGMTORGCODE" jdbcType="VARCHAR" property="MngmtOrgCode" />
+				<result column="REPORTFLAG" jdbcType="VARCHAR" property="reportflag" />
+			</association>
+			<association property="PbcrsReportCreditLimSgmtList"
+				javaType="com.hkbank.pbcrs.model.PbcrsReportCreditlimsgmt">
+				<id column="CREDITLIMSGMTSEQNO" jdbcType="VARCHAR" property="CreditLimSgmtSeqNo" />
+				<result column="CREDITLIMTYPE" jdbcType="VARCHAR" property="CreditLimType" />
+				<result column="LIMLOOPFLG" jdbcType="VARCHAR" property="LimLoopFlg" />
+				<result column="CREDITLIM" jdbcType="VARCHAR" property="CreditLim" />
+				<result column="CY" jdbcType="VARCHAR" property="Cy" />
+				<result column="CONEFFDATE" jdbcType="VARCHAR" property="ConEffDate" />
+				<result column="CONEXPDATE" jdbcType="VARCHAR" property="ConExpDate" />
+				<result column="CONSTATUS" jdbcType="VARCHAR" property="ConStatus" />
+				<result column="CREDITREST" jdbcType="VARCHAR" property="CreditRest" />
+				<result column="CREDITRESTCODE" jdbcType="VARCHAR" property="CreditRestCode" />
+				<result column="REPORTFLAG" jdbcType="VARCHAR" property="reportflag" />
+			</association>
+		</association>
+	</resultMap>
+	<select id="selectByMap" parameterType="map" resultMap="BaseResultMap">
+		select b.BsSgmtSeqNo,
+		b.InfRecType,
+		b.ModRecCode,
+		b.RptDate,
+		b.MdfcSgmtCode,
+		t.CtrctBsSgmtSeqNo,
+		t.Name,
+		t.IDType,
+		t.IDNum,
+		t.MngmtOrgCode,
+		t1.CreditLimSgmtSeqNo,
+		t1.CreditLimType,
+		t1.LimLoopFlg,
+		t1.CreditLim,
+		t1.Cy,
+		t1.ConEffDate,
+		t1.ConExpDate,
+		t1.ConStatus,
+		t1.CreditRest
+
+		from PBCRS_REPORT_INCTRCTMDFCBSSGMT b
+
+		left join PBCRS_REPORT_CtrctBsSgmt t
+		on b.MdfcSgmtCode='B' and b.bssgmtseqno=t.ctrctbssgmtseqno
+		left join PBCRS_REPORT_CreditLimSgmt t1
+		on b.MdfcSgmtCode='D' and b.bssgmtseqno=t1.creditlimsgmtseqno
+		 where b.reportflag='0'
+		<if test="sysid != null and sysid != ''">
+			and b.sourcesys=#{sysid}
+		</if>
+		<if test="seqNoS != null and seqNoS != ''">
+			and b.BsSgmtSeqNo in (${seqNoS})
+		</if>
+	</select>
+	<update id="updateByMap" parameterType="map">
+		update PBCRS_REPORT_INCTRCTMDFCBSSGMT set reportflag='1' where
+		 reportflag='0'
+		 <if test="etl_Date != null and etl_Date != ''">
+			and RptDate = to_char(#{etl_Date},'yyyy-mm-dd')
+		</if>
+		<if test="sysid != null and sysid != ''">
+			and SOURCESYS = #{sysid}
+		</if>
+		<if test="seqNoS != null and seqNoS != ''">
+			and BsSgmtSeqNo in(${seqNoS})
+		</if>
+	</update>
+</mapper>

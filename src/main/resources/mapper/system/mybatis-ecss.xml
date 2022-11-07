@@ -1,0 +1,70 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+
+<mapper namespace="ECSSService">
+
+	<select id="obtainSEQ_ECSS_SEQ_NO" parameterType="map"
+		resultType="map">
+		select nextval('SEQ_SRMS_ECSS_SEQ_NO') NEXTVAL
+	</select>
+
+	<select id="findAchivesByBusinessID" parameterType="map"
+		resultType="map">
+		SELECT t.*
+		FROM SRMS_ARCHIVES_CONTROL t
+		where t.AC_IMG_ID =
+		#{AC_IMG_ID}
+	</select>
+
+	<select id="findAchivesByBusinessCode" parameterType="map"
+		resultType="map">
+		SELECT t.*
+		FROM SRMS_ARCHIVES_CONTROL t
+		where
+		t.BUSSINESS_CODE =
+		#{BUSSINESS_CODE}
+	</select>
+
+	<insert id="saveArchives" parameterType="map">
+		replace into
+		SRMS_ARCHIVES_CONTROL 
+		(AC_IMG_ID,
+		AC_SEQ,
+		AC_TYPE,
+		AC_OLD_NAME,
+		AC_STUTAS,
+		WHO_CREATE,
+		WHEN_CREATE,
+		UPLOAD_FLAG,
+		BUSSINESS_CODE,
+		LOCAL_PATH,
+		FILE_STORAGE)
+		VALUES
+		(#{AC_IMG_ID} ,
+		#{AC_SEQ} ,
+		#{AC_TYPE} ,
+		#{AC_OLD_NAME} ,
+		#{AC_STUTAS} ,
+		#{WHO_CREATE} ,
+		#{WHEN_CREATE} ,
+		#{UPLOAD_FLAG} ,
+		#{BUSSINESS_CODE} ,
+		#{LOCAL_PATH}, 
+		#{FILE_STORAGE} )
+	</insert>
+
+	<delete id="deleteArchiveByBussinessId" parameterType="map">
+		delete
+		from
+		SRMS_ARCHIVES_CONTROL where AC_IMG_ID=#{AC_IMG_ID}
+		and
+		AC_SEQ=#{AC_SEQ}
+	</delete>
+
+	<delete id="deleteArchiveByBussinessCode" parameterType="map">
+		delete
+		from
+		SRMS_ARCHIVES_CONTROL where BUSSINESS_CODE=#{BUSSINESS_CODE}
+	</delete>
+
+</mapper>

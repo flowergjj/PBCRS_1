@@ -1,0 +1,281 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+
+<mapper namespace="Power">
+
+	<resultMap id="baseMap" type="com.hkbank.pbcrs.model.SysMenu">
+		<result column="MENU_ID" jdbcType="VARCHAR" property="MENU_ID"/>
+		<result column="MENU_NAME" jdbcType="VARCHAR" property="MENU_NAME"/>
+		<result column="MENU_LEVEL" jdbcType="VARCHAR" property="MENU_LEVEL"/>
+		<result column="MENU_PARENT_ID" jdbcType="VARCHAR" property="MENU_PARENT_ID"/>
+		<result column="MENU_ADDRESS" jdbcType="VARCHAR" property="MENU_ADDRESS"/>
+		<result column="MENU_ORDER" jdbcType="VARCHAR" property="MENU_ORDER"/>
+		<result column="USERID" jdbcType="VARCHAR" property="USERID"/>
+		<collection property="children" javaType="java.util.List" ofType="com.hkbank.pbcrs.model.SysMenu"
+					select="Power.findAllSubMenu"
+					column="{USERID=USERID,MENU_ID=MENU_ID}"></collection>
+
+	</resultMap>
+	<select id="findAllMenu" parameterType="map" resultType="map">
+		SELECT
+		menu.MENU_ID,
+		menu.MENU_NAME,
+		menu.MENU_LEVEL,
+		menu.MENU_PARENT_ID,
+		menu.MENU_ADDRESS,
+		menu.MENU_ORDER,
+		FROM
+		PBCRS_SYS_MENU menu,
+		PBCRS_SYS_ROLE_POWER role_menu,
+		PBCRS_SYS_USER_ROLE role_user
+		WHERE
+		menu.MENU_ID = role_menu.MENU_ID
+		and
+		role_menu.ROLE_ID = role_user.ROLEID
+		and menu.VALID_FLAG = '1'
+		and
+		role_user.USERID = #{USER_ID}
+		order by menu.MENU_ORDER
+	</select>
+
+	<select id="findAllSubMenu" parameterType="map" resultMap="baseMap">
+		SELECT menu.MENU_ID,
+			   menu.MENU_NAME,
+			   menu.MENU_LEVEL,
+			   menu.MENU_PARENT_ID,
+			   menu.MENU_ADDRESS,
+			   menu.Menu_Order,
+			   role_user.USERID
+		FROM PBCRS_SYS_MENU       menu,
+			 PBCRS_SYS_ROLE_POWER role_menu,
+			 PBCRS_SYS_USER_ROLE  role_user
+		WHERE menu.MENU_ID = role_menu.POWERID
+		  AND role_menu.ROLEID = role_user.ROLEID
+		  AND menu.VALID_FLAG = '1'
+		  AND role_user.USERID = #{USERID}
+			and menu.MENU_PARENT_ID = #{MENU_ID}
+		order by menu.Menu_Order
+	</select>
+	
+	
+	<select id="findAllUserFunc" parameterType="map" resultType="map">
+	    SELECT
+				FUNC_ID
+			FROM
+				PBCRS_sys_menu_func f,
+				PBCRS_sys_role_power p,
+				PBCRS_sys_user_role u
+			WHERE
+				f.func_id = p.powerid
+			AND p.roleid = u.roleid
+			AND u.userid = #{USERID}
+	    
+	    
+	</select>
+	<select id="findUserRightFunc" parameterType="map" resultType="map">
+		SELECT
+				*
+			FROM
+				PBCRS_sys_menu_func f,
+				PBCRS_sys_role_power p,
+				PBCRS_sys_user_role u
+			WHERE
+				f.func_id = p.powerid
+			AND p.roleid = u.roleid
+			AND u.userid = #{USERID}
+			and f.func_id=#{funcid}
+	</select>
+	
+	
+	<select id="findSubMenu" parameterType="map" resultType="map">
+		SELECT
+		menu.MENU_ID,
+		menu.MENU_NAME,
+		menu.MENU_LEVEL,
+		menu.MENU_PARENT_ID,
+		menu.MENU_ADDRESS
+		FROM
+		PBCRS_SYS_MENU menu ,
+		PBCRS_SYS_ROLE_POWER role_menu,
+		PBCRS_SYS_USER_ROLE role_user
+		WHERE
+		menu.MENU_ID = role_menu.MENU_ID
+		AND
+		role_menu.ROLE_ID =
+		role_user.ROLEID
+		AND menu.VALID_FLAG = '1'
+		AND
+		role_user.USERID =
+		#{USERID}
+		START WITH menu.MENU_ID = {#MENU_ID}
+		CONNECT BY PRIOR
+		menu.MENU_ID =
+		menu.MENU_PARENT_ID
+	</select>
+	
+	<select id="getRoleCountsById" resultType="int" parameterType="map">
+		SELECT
+		count(*)
+		FROM
+		PBCRS_sys_role_info
+		where 1=1
+		and roleid = #{roleID}
+	</select>
+
+	<select id="getRoleInfoById" parameterType="map" resultType="map">
+		select roleid as "roleID" ,rolename as "roleName",role_level as "roleLevel",
+		VALID_CODE_FLAG
+		from PBCRS_sys_role_info
+		where 1=1
+		and roleid = #{roleID}
+	</select>
+	
+	<select id="getPowerListByRoleId" parameterType="map" resultType="string">
+		select t.powerid as powerID from PBCRS_sys_role_power t where t.roleid = #{roleID}
+	</select>
+	
+	<select id="getPowerByRoleId" parameterType="map" resultType="map">
+        select t.menu_id as "powerID",t.menu_name as "powerName",t1.roleID as "roleID",t.menu_level as "menu_level"
+		from (select t2.menu_id,t2.menu_name,t2.menu_order,t2.menu_level from PBCRS_sys_menu t2 where t2.valid_flag = '1'
+		 UNION
+    	select f.func_id,f.func_name,f.func_order,'3'  from PBCRS_sys_menu_func f
+		) t
+		left join PBCRS_sys_role_power t1
+		on t1.powerid = t.menu_id and t1.roleid = #{roleID}
+		order by t.menu_order
+    </select>
+
+	<select id="findRoleList" parameterType="map" resultType="map">
+		SELECT
+			t.roleid as "roleID",
+			t.rolename as "roleName",
+			t.UPDATEUSER as "updateUser",
+			to_char(t.UPDATEDATE,'yyyy-mm-dd HH24:MI:SS')  as "updateDate"
+		from PBCRS_SYS_ROLE_INFO t
+		where 1=1
+		ORDER BY t.role_order
+	</select>
+	
+	<select id="getAllRoleCounts" parameterType="map" resultType="int">
+		SELECT count(*)
+		from PBCRS_SYS_ROLE_INFO t
+		where 1=1
+	</select>
+
+	<select id="obtainSEQ_PBCRS_SYS_ROLE_INFO_LOG" parameterType="map"
+		resultType="map">
+		select PBCRS_SYS_ROLE_INFO_LOG_SER.Nextval as "NEXTVAL" from dual 
+	</select>
+	
+	<!-- 创建角色 -->
+	<insert id="createRole" parameterType="Map">
+		INSERT INTO
+		PBCRS_SYS_ROLE_INFO
+		(ROLEID,ROLENAME,UPDATEUSER,UPDATEDATE,STATUS,ROLE_LEVEL,VALID_CODE_FLAG)
+		VALUES
+		(#{roleID},#{roleName},#{updateUser},#{updateDate},#{status},#{roleLevel},#{VALID_CODE_FLAG})
+	</insert>
+	<!-- 创建角色日志 -->
+	<insert id="createRoleLog" parameterType="map">
+		INSERT into
+		PBCRS_SYS_ROLE_INFO_LOG
+		(SERIALNO,
+		ROLEID,
+		ROLENAME,
+		STATUS,
+		UPDATEUSER,
+		UPDATEDATE,
+		DELFLAG,
+		role_level,
+		VALID_CODE_FLAG)
+		VALUES
+		(#{seqNo},
+		#{roleID},
+		#{roleName},
+		#{status},
+		#{updateUser},
+		#{updateDate},
+		#{delFlag},
+		#{roleLevel},
+		#{VALID_CODE_FLAG})
+	</insert>
+	<!-- 创建角色权限 -->
+	<insert id="createRolePower" parameterType="map">
+		INSERT into
+		PBCRS_SYS_ROLE_POWER
+		(ROLEID,
+		POWERID,
+		UPDATEUSER,
+		UPDATEDATE)
+		VALUES
+		(#{roleID},
+		#{powerID},
+		#{updateUser},
+		#{updateDate})
+	</insert>
+	<!-- 创建角色权限日志 -->
+	<insert id="createRolePowerLog" parameterType="map">
+		INSERT into
+		PBCRS_SYS_ROLE_POWER_LOG
+		(SERIALNO,
+		ROLEID,
+		POWERID,
+		UPDATEUSER,
+		UPDATEDATE,
+		DELFLAG)
+		VALUES
+		(PBCRS_SYS_ROLE_POWER_LOG_SER.nextval,
+		#{roleID},
+		#{powerID},
+		#{updateUser},
+		#{updateDate},
+		#{delFlag})
+	</insert>
+	
+	<delete id="deleteRole" parameterType="map">
+		delete from
+		PBCRS_SYS_ROLE_INFO where roleid=#{roleID}
+	</delete>
+
+	<delete id="clearRolePower" parameterType="map">
+		delete from
+		PBCRS_SYS_ROLE_POWER where roleid=#{roleID}
+	</delete>
+	
+	<update id="modifyRole" parameterType="Map">
+		UPDATE PBCRS_SYS_ROLE_INFO SET
+		ROLEID =#{roleID},
+		ROLENAME=#{roleName},
+		STATUS=#{status},
+		ROLE_LEVEL = #{roleLevel},
+		UPDATEUSER=#{updateUser},
+		UPDATEDATE=#{updateDate},
+		VALID_CODE_FLAG=#{VALID_CODE_FLAG}
+		WHERE
+		ROLEID =#{roleID}
+	</update>
+	
+	<update id="updateRolePower" parameterType="Map">
+		UPDATE PBCRS_SYS_ROLE_POWER SET
+		ROLEID = #{roleID},
+		POWERID = #{powerID},
+		UPDATEUSER = #{updateUser},
+		UPDATEDATE = #{updateDate}
+		WHERE
+		ROLEID = #{roleID}
+	</update>
+	
+	<select id="getRoleLevel" parameterType="map"
+		resultType="map">
+		select sc.sys_code as "id",sc.sys_code_desc as "text" 
+		from PBCRS_sys_code sc
+		where sc.sys_code_type = 'ROLE_LEVEL'
+	</select>
+	<select id="findUserRoleCounts" parameterType="map" resultType="int">
+        select count(*) from PBCRS_sys_user_role t where t.roleid in
+		 <foreach item="item" index="index" collection="rolelist" open="(" separator="," close=")">
+		   #{item}
+		 </foreach>
+    </select>
+
+</mapper>

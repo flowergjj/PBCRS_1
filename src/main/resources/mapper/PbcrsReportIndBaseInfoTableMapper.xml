@@ -1,0 +1,202 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.hkbank.pbcrs.mapper.PbcrsReportIndBaseInfoTableMapper">
+	
+	<select id="getList" parameterType="map" resultType="map">
+						
+			select fieldname,cx,kz,cnt,total,to_char(cnt * decode(total,0,0,1/total) * 100,'999')||'%' bl from (
+					select '配偶姓名' fieldname,'条件报送' cx	,'可空型' kz,count(1) cnt
+					from PBCRS_REPORT_SPSINFSGMT t
+					where SPONAME is not null  and MARISTATUS in ('20','21','22','23')
+					and etl_date = to_date(#{queryDate},'yyyy-mm-dd')
+					    union all
+					select '配偶证件类型','条件报送' cx	,'条件非空' kz,count(1)
+					from PBCRS_REPORT_SPSINFSGMT t
+					where SPOIDTYPE is not null and MARISTATUS in ('20','21','22','23')
+					and etl_date = to_date(#{queryDate},'yyyy-mm-dd')
+					    union all
+					select '配偶证件号码','条件报送' cx	,'条件非空' kz,count(1) 
+					from PBCRS_REPORT_SPSINFSGMT t
+					where SPOIDNUM is not null and MARISTATUS in ('20','21','22','23')
+					and etl_date = to_date(#{queryDate},'yyyy-mm-dd')
+					    union all
+					select '配偶联系电话','条件报送' cx	,'可空型' kz,count(1)
+					from PBCRS_REPORT_SPSINFSGMT t
+					where SPOTEL is not null and MARISTATUS in ('20','21','22','23')
+					and etl_date = to_date(#{queryDate},'yyyy-mm-dd')
+					    union all
+					select '配偶工作单位','条件报送' cx	,'可空型' kz,count(1)
+					from PBCRS_REPORT_SPSINFSGMT t
+					where SPSCMPYNM is not null and MARISTATUS in ('20','21','22','23')
+					and etl_date = to_date(#{queryDate},'yyyy-mm-dd')
+					)a left join 
+					(
+					select count(1) total
+					from PBCRS_REPORT_SPSINFSGMT t
+					where SPSCMPYNM is not null and MARISTATUS in ('20','21','22','23')
+					and etl_date = to_date(#{queryDate},'yyyy-mm-dd')
+			) b on 1=1
+			
+			union all
+			
+			
+			select fieldname,cx,kz,cnt,total,to_char(cnt * decode(total,0,0,1/total) * 100,'999')||'%' bl from (
+					select '性别' fieldname,'必须报送出现' cx	,'非空型' kz,count(1) cnt
+					from PBCRS_REPORT_FCSINFSGMT t
+					where SEX is not null  and  SEX !='0'
+					and etl_date = to_date(#{queryDate},'yyyy-mm-dd')
+					    union all
+					select '出生日期','必须报送出现' cx	,'可空型' kz,count(1)
+					from PBCRS_REPORT_FCSINFSGMT t
+					where DOB is not null 
+					and etl_date = to_date(#{queryDate},'yyyy-mm-dd')
+					    union all
+					select '国籍', '必须报送出现' cx	,'非空型' kz,count(1)
+					from PBCRS_REPORT_FCSINFSGMT t
+					where NATION is not null  and NATION !='999'
+					and etl_date = to_date(#{queryDate},'yyyy-mm-dd')
+					    union all
+					select '户籍地址','必须报送出现' cx	,'可空型' kz,count(1)
+					from PBCRS_REPORT_FCSINFSGMT t
+					where HOUSEADD is not null 
+					and etl_date = to_date(#{queryDate},'yyyy-mm-dd')
+					    union all
+					select '户籍所在地行政区划','必须报送出现' cx	,'可空型' kz,count(1)
+					from PBCRS_REPORT_FCSINFSGMT t
+					where HHDIST is not null 
+					and etl_date = to_date(#{queryDate},'yyyy-mm-dd')
+					    union all
+					select '手机号码','必须报送出现' cx	,'可空型' kz,count(1)
+					from PBCRS_REPORT_FCSINFSGMT t
+					where CELLPHONE is not null 
+					and etl_date = to_date(#{queryDate},'yyyy-mm-dd')
+					    union all
+					select '电子邮箱','必须报送出现' cx	,'可空型' kz,count(1)
+					from PBCRS_REPORT_FCSINFSGMT t
+					where EMAIL is not null 
+					and etl_date = to_date(#{queryDate},'yyyy-mm-dd')
+					    union all 
+					select '婚姻状况','必须报送出现' cx	,'非空型' kz,count(1)
+					from PBCRS_REPORT_SPSINFSGMT t
+					where MARISTATUS is not null 
+					and etl_date = to_date(#{queryDate},'yyyy-mm-dd')
+					    union all 
+					select '学历','必须报送出现' cx	,'非空型' kz,count(1)
+					from PBCRS_REPORT_EDUINFSGMT t
+					where EDULEVEL is not null and EDULEVEL!='99'
+					and etl_date = to_date(#{queryDate},'yyyy-mm-dd')
+					    union all
+					select '学位','必须报送出现' cx	,'非空型' kz,count(1)
+					from PBCRS_REPORT_EDUINFSGMT t
+					where ACADEGREE is not null  and ACADEGREE!='9'
+					and etl_date = to_date(#{queryDate},'yyyy-mm-dd')
+					    union all
+					select '就业状况','必须报送出现' cx	,'非空型' kz,count(1)
+					from PBCRS_REPORT_OCTPNINFSGMT t
+					where EMPSTATUS is not null and EMPSTATUS != '99'
+					and etl_date = to_date(#{queryDate},'yyyy-mm-dd')
+					    union all
+					select '单位名称','条件报送' cx	,'非空型' kz,count(1)
+					from PBCRS_REPORT_OCTPNINFSGMT t
+					where CPNNAME is not null and CPNNAME not like '%暂缺%'
+					and etl_date = to_date(#{queryDate},'yyyy-mm-dd')
+					    union all
+					select '单位性质','条件报送' cx	,'非空型' kz,count(1)
+					from PBCRS_REPORT_OCTPNINFSGMT t
+					where CPNTYPE is not null and CPNTYPE !='99'
+					and etl_date = to_date(#{queryDate},'yyyy-mm-dd')
+					    union all
+					select '单位所属行业','条件报送' cx	,'非空型' kz,count(1)
+					from PBCRS_REPORT_OCTPNINFSGMT t
+					where INDUSTRY is not null and INDUSTRY!='9'
+					and etl_date = to_date(#{queryDate},'yyyy-mm-dd')
+					    union all
+					select '单位详细地址','条件报送' cx	,'可空型' kz,count(1)
+					from PBCRS_REPORT_OCTPNINFSGMT t
+					where CPNADDR is not null 
+					and etl_date = to_date(#{queryDate},'yyyy-mm-dd')
+					    union all
+					select '单位所在地邮编','条件报送' cx	,'可空型' kz,count(1)
+					from PBCRS_REPORT_OCTPNINFSGMT t
+					where CPNPC is not null 
+					and etl_date = to_date(#{queryDate},'yyyy-mm-dd')
+					    union all
+					select '单位所在地行政区划','条件报送' cx	,'可空型' kz,count(1)
+					from PBCRS_REPORT_OCTPNINFSGMT t
+					where CPNDIST is not null 
+					and etl_date = to_date(#{queryDate},'yyyy-mm-dd')
+					    union all
+					select '单位电话','条件报送' cx	,'可空型' kz,count(1)
+					from PBCRS_REPORT_OCTPNINFSGMT t
+					where CPNTEL is not null 
+					and etl_date = to_date(#{queryDate},'yyyy-mm-dd')
+					    union all
+					select '职业','条件报送' cx	,'非空型' kz,count(1) 
+					from PBCRS_REPORT_OCTPNINFSGMT t
+					where OCCUPATION is not null and OCCUPATION !='Z'
+					and etl_date = to_date(#{queryDate},'yyyy-mm-dd')
+					    union all
+					select '职务','条件报送' cx	,'非空型' kz,count(1)
+					from PBCRS_REPORT_OCTPNINFSGMT t
+					where TITLE is not null and TITLE !='9'
+					and etl_date = to_date(#{queryDate},'yyyy-mm-dd')
+					    union all
+					select '职称','条件报送' cx	,'非空型' kz,count(1)
+					from PBCRS_REPORT_OCTPNINFSGMT t
+					where TECHTITLE is not null and TECHTITLE !='9'
+					and etl_date = to_date(#{queryDate},'yyyy-mm-dd')
+					    union all
+					select '本单位工作起始年份','条件报送' cx	,'可空型' kz,count(1)
+					from PBCRS_REPORT_OCTPNINFSGMT t
+					where WORKSTARTDATE is not null 
+					and etl_date = to_date(#{queryDate},'yyyy-mm-dd')
+					    union all
+					select '居住状况','必须报送出现' cx	,'非空型' kz,count(1)
+					from PBCRS_REPORT_REDNCINFSGMT t
+					where RESISTATUS is not null and RESISTATUS !='9'
+					and etl_date = to_date(#{queryDate},'yyyy-mm-dd')
+					    union all
+					select '居住地详细地址','必须报送出现' cx	,'可空型' kz,count(1)
+					from PBCRS_REPORT_REDNCINFSGMT t
+					where RESIADDR is not null 
+					and etl_date = to_date(#{queryDate},'yyyy-mm-dd')
+					    union all
+					select '居住地邮编','必须报送出现' cx	,'可空型' kz,count(1)
+					from PBCRS_REPORT_REDNCINFSGMT t
+					where RESIPC is not null 
+					and etl_date = to_date(#{queryDate},'yyyy-mm-dd')
+					    union all
+					select '居住地行政区划', '必须报送出现' cx	,'可空型' kz,count(1)
+					from PBCRS_REPORT_REDNCINFSGMT t
+					where RESIDIST is not null 
+					and etl_date = to_date(#{queryDate},'yyyy-mm-dd')
+					    union all
+					select '住宅电话','必须报送出现' cx	,'可空型' kz,count(1)
+					from PBCRS_REPORT_REDNCINFSGMT t
+					where HOMETEL is not null 
+					and etl_date = to_date(#{queryDate},'yyyy-mm-dd')
+					    union all
+					select '通讯地址','必须报送出现' cx	,'非空型' kz,count(1)
+					from PBCRS_REPORT_MLGINFSGMT t
+					where MAILADDR is not null and MAILADDR not like '%暂缺%'
+					and etl_date = to_date(#{queryDate},'yyyy-mm-dd')
+					    union all
+					select '通讯地址邮编','必须报送出现' cx	,'非空型' kz,count(1)
+					from PBCRS_REPORT_MLGINFSGMT t
+					where MAILPC is not null 
+					and etl_date = to_date(#{queryDate},'yyyy-mm-dd')
+					    union all
+					select '通讯地行政区划','必须报送出现' cx	,'可空型' kz,count(1)
+					from PBCRS_REPORT_MLGINFSGMT t
+					where MAILDIST is not null 
+					and etl_date = to_date(#{queryDate},'yyyy-mm-dd')
+			) a
+			left join 
+			(
+					select count(1) total from PBCRS_REPORT_BSSGMT
+					where etl_date = to_date(#{queryDate},'yyyy-mm-dd')
+			) total on 1 = 1
+
+	</select>
+	
+</mapper>

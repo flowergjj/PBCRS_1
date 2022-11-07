@@ -1,0 +1,25 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.hkbank.pbcrs.mapper.PbcrsReportBatchInfoMapper">
+  <resultMap id="BaseResultMap" type="com.hkbank.pbcrs.model.PbcrsReportBatchInfo">
+    <result column="SGMTSEQNO" jdbcType="VARCHAR" property="sgmtSeqNo" />
+    <result column="FIELDNAME" jdbcType="VARCHAR" property="fieldName" />
+    <result column="FIELDVALUE" jdbcType="VARCHAR" property="fieldValue" />
+    <result column="ID" jdbcType="VARCHAR" property="id" />
+    <result column="DATADATE" jdbcType="VARCHAR" property="dataDate" />
+    <result column="SOURCESYS" jdbcType="VARCHAR" property="sourceSys" />
+    <result column="MARKNO" jdbcType="VARCHAR" property="markNo" />
+  </resultMap>
+	 <insert id="insert" parameterType="com.hkbank.pbcrs.model.PbcrsReportBatchInfo">
+    insert into PBCRS_REPORT_BATCH_INFO (SGMTSEQNO, FIELDNAME,FIELDVALUE,ID,DATADATE,SOURCESYS,MARKNO)
+    values (#{sgmtSeqNo,jdbcType=VARCHAR}, #{fieldName,jdbcType=VARCHAR}, #{fieldValue,jdbcType=VARCHAR}, #{id,jdbcType=VARCHAR},
+    #{dataDate,jdbcType=VARCHAR},#{sourceSys,jdbcType=VARCHAR},#{markNo,jdbcType=VARCHAR}
+      )
+  </insert>
+  
+  	 <insert id="insertDel" parameterType="com.hkbank.pbcrs.model.PbcrsReportBatchInfo">
+    insert into PBCRS_REPORT_BATCHDel_INFO (SGMTSEQNO, ID)
+    values (#{sgmtSeqNo,jdbcType=VARCHAR}, #{id,jdbcType=VARCHAR}
+      )
+  </insert>
+</mapper> 

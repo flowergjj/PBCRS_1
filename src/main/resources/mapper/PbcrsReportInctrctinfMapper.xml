@@ -1,0 +1,100 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.hkbank.pbcrs.mapper.PbcrsReportInctrctinfMapper">
+	<resultMap id="BaseResultMap" type="com.hkbank.pbcrs.model.PbcrsReportInctrctinf">
+
+		<id column="INCTRCTINFSEQNO" jdbcType="VARCHAR" property="InCtrctInfSeqNo" />
+		<!-- <result column="CTRCTBSSGMTSEQNO" jdbcType="VARCHAR" property="CtrctBsSgmtSeqNo" 
+			/> <result column="CTRCTCERTRELSGMTSEQNO" jdbcType="VARCHAR" property="CtrctCertRelSgmtSeqNo" 
+			/> <result column="CREDITLIMSGMTSEQNO" jdbcType="VARCHAR" property="CreditLimSgmtSeqNo" 
+			/> -->
+		<association property="CtrctBsSgmt"
+			javaType="com.hkbank.pbcrs.model.PbcrsReportCtrctbssgmt">
+			<id column="CTRCTBSSGMTSEQNO" jdbcType="VARCHAR" property="CtrctBsSgmtSeqNo" />
+			<result column="INFRECTYPE" jdbcType="VARCHAR" property="InfRecType" />
+			<result column="CONTRACTCODE" jdbcType="VARCHAR" property="ContractCode" />
+			<result column="RPTDATE" jdbcType="VARCHAR" property="RptDate" />
+			<result column="RPTDATECODE" jdbcType="VARCHAR" property="RptDateCode" />
+			<result column="NAME" jdbcType="VARCHAR" property="Name" />
+			<result column="IDTYPE" jdbcType="VARCHAR" property="IDType" />
+			<result column="IDNUM" jdbcType="VARCHAR" property="IDNum" />
+			<result column="MNGMTORGCODE" jdbcType="VARCHAR" property="MngmtOrgCode" />
+			<result column="REPORTFLAG" jdbcType="VARCHAR" property="reportflag" />
+		</association>
+		<association property="CtrctCertRelSgmt"
+			javaType="com.hkbank.pbcrs.model.PbcrsReportCtrctcertrelsgmt">
+			<id column="CTRCTCERTRELSGMTSEQNO" jdbcType="VARCHAR"
+				property="CtrctCertRelSgmtSeqNo" />
+			<result column="BRERNM" jdbcType="VARCHAR" property="BrerNm" />
+			<result column="REPORTFLAG" jdbcType="VARCHAR" property="reportflag" />
+		</association>
+		<association property="CreditLimSgmt"
+			javaType="com.hkbank.pbcrs.model.PbcrsReportCreditlimsgmt">
+			<id column="CREDITLIMSGMTSEQNO" jdbcType="VARCHAR" property="CreditLimSgmtSeqNo" />
+			<result column="CREDITLIMTYPE" jdbcType="VARCHAR" property="CreditLimType" />
+			<result column="LIMLOOPFLG" jdbcType="VARCHAR" property="LimLoopFlg" />
+			<result column="CREDITLIM" jdbcType="VARCHAR" property="CreditLim" />
+			<result column="CY" jdbcType="VARCHAR" property="Cy" />
+			<result column="CONEFFDATE" jdbcType="VARCHAR" property="ConEffDate" />
+			<result column="CONEXPDATE" jdbcType="VARCHAR" property="ConExpDate" />
+			<result column="CONSTATUS" jdbcType="VARCHAR" property="ConStatus" />
+			<result column="CREDITREST" jdbcType="VARCHAR" property="CreditRest" />
+			<result column="CREDITRESTCODE" jdbcType="VARCHAR" property="CreditRestCode" />
+			<result column="REPORTFLAG" jdbcType="VARCHAR" property="reportflag" />
+		</association>
+	</resultMap>
+	<select id="selectByMap" parameterType="map" resultMap="BaseResultMap">
+	select * from (
+			select t.*,rownum rm from (
+				select 
+				 CTRCTBSSGMTSEQNO INCTRCTINFSEQNO,
+	             CtrctBsSgmtSeqNo,
+	             InfRecType,
+	             ContractCode,
+	             RptDate,
+	             RptDateCode,
+	             Name,
+	             IDType,
+	             IDNum,
+	             MngmtOrgCode,
+	             CreditLimSgmtSeqNo,
+	             CreditLimType,
+	             LimLoopFlg,
+	             CreditLim,
+	             Cy,
+	             ConEffDate,
+	             ConExpDate,
+	             ConStatus,
+	             CreditRest
+		from PBCRS_REPORT_CtrctBsSgmt b
+		left join PBCRS_REPORT_CreditLimSgmt t
+		on b.ctrctbssgmtseqno=t.creditlimsgmtseqno
+		<if test="sysid != null and sysid != ''">
+			and t.sourcesys=#{sysid}
+		</if>
+		<if test="etl_Date != null and etl_Date != ''">
+			<!-- and t.etl_date=to_date(#{etl_Date},'yyyymmdd') -->
+			and t.etl_date=#{etl_Date}
+		</if>
+		where b.reportflag='0' and b.etl_date=#{etl_Date}
+		<if test="sysid != null and sysid != ''">
+			and b.sourcesys=#{sysid}
+		</if>
+		)t where rownum &lt;= #{pageEnd}
+  		 )where rm > #{pageBegin}
+	</select>
+	<select id="selectByMapCount" parameterType="map" resultType="int">
+
+		
+				select 
+				count(1)
+		from PBCRS_REPORT_CtrctBsSgmt b
+		
+		where b.reportflag='0' and b.etl_date=#{etl_Date}
+		<if test="sysid != null and sysid != ''">
+			and b.sourcesys=#{sysid}
+		</if>
+		
+	</select>
+	
+</mapper>

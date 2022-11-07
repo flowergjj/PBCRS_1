@@ -1,0 +1,13 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+
+<mapper namespace="SystemCode">
+
+	<select id="findSysCode" parameterType="map" resultType="map">
+		select sc.sys_code as "id",sc.sys_code_desc as "text" 
+		from PBCRS_sys_code sc
+		where sc.sys_code_type = #{type}
+		order by sc.sys_code, sys_code_desc
+	</select>
+
+</mapper>

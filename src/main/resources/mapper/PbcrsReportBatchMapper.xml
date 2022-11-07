@@ -1,0 +1,151 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.hkbank.pbcrs.mapper.PbcrsReportBatchMapper">
+  <resultMap id="BaseResultMap" type="com.hkbank.pbcrs.model.PbcrsReportBatch">
+    <result column="OPERATEDATE" jdbcType="VARCHAR" property="operateDate" />
+    <result column="REPORTTYPE" jdbcType="VARCHAR" property="reportType" />
+    <result column="FILENAME" jdbcType="VARCHAR" property="fileName" />
+    <result column="REPORTID" jdbcType="VARCHAR" property="reportId" />
+     <result column="ID" jdbcType="VARCHAR" property="id" />
+  </resultMap>
+ <resultMap id="BaseResultMapDel" type="com.hkbank.pbcrs.model.PbcrsReportBatchDel">
+    <result column="OPERATEDATE" jdbcType="VARCHAR" property="operateDate" />
+    <result column="REPORTTYPE" jdbcType="VARCHAR" property="reportType" />
+    <result column="FILENAME" jdbcType="VARCHAR" property="fileName" />
+    <result column="REPORTID" jdbcType="VARCHAR" property="reportId" />
+     <result column="ID" jdbcType="VARCHAR" property="id" />
+  </resultMap>
+	 <insert id="insert" parameterType="com.hkbank.pbcrs.model.PbcrsReportBatch">
+    insert into PBCRS_REPORT_BATCH ( OPERATEDATE,REPORTTYPE,FILENAME
+      ,REPORTID,ID)
+    values (#{operateDate,jdbcType=VARCHAR},#{reportType,jdbcType=VARCHAR},#{fileName,jdbcType=VARCHAR}
+    ,#{reportId,jdbcType=VARCHAR},#{id,jdbcType=VARCHAR}
+      )
+  </insert>
+  
+  <select id="checkFileName" parameterType="map" resultType="int">
+     select count(1) from PBCRS_REPORT_BATCH
+     where FILENAME = #{fileName}
+  </select>
+
+<select id="selectListCount" resultType="int" parameterType="map">
+SELECT count(1) from PBCRS_REPORT_BATCH
+ where 1=1 
+<include refid="sql_selectCont"></include>
+</select>
+   
+   
+   <select id="selectListPage" resultType="map" parameterType="map"> 
+    select * from (
+	    SELECT A.*, ROWNUM RN  from ( 
+	    select  ID, OPERATEDATE operateDate,REPORTTYPE reportType,FILENAME fileName,
+	    REPORTID reportId
+	    from  PBCRS_REPORT_BATCH
+        where 1 =1 <include refid="sql_selectCont"></include>
+        order by operateDate desc,rownum
+) A
+	  	WHERE ROWNUM &lt;=${endindex}
+	  	
+	  	
+  	) where RN &gt;${startindex}
+  </select>
+  
+       <sql id="sql_selectCont">
+		
+  	 <if test="queryfileName !=null and queryfileName !=''">
+    	and FILENAME like '%${queryfileName}%'
+    </if> 
+    <if test="queryRptDate!=null and queryRptDate!=''">
+    	and OPERATEDATE = #{queryRptDate}
+    </if>	
+	</sql>
+	
+  <select id="listBatchGroupByDataDate" resultMap="BaseResultMap" parameterType="map"> 
+   select DATADATE dataDate from PBCRS_REPORT_BATCH_INFO where id = #{id} group by DATADATE
+  </select>
+  
+    <select id="listBatch" resultMap="BaseResultMap" parameterType="map"> 
+   select binfo.SGMTSEQNO sgmtSeqNo ,binfo.DATADATE dataDate,binfo.SOURCESYS sourceSys,binfo.MARKNO markNo,b.REPORTTYPE reportType,b.FILENAME fileName,
+	    b.REPORTID reportId from PBCRS_REPORT_BATCH_INFO binfo inner join PBCRS_REPORT_BATCH b on b.id=binfo.id   where binfo.id = #{id} and binfo.DATADATE =#{dataDate}
+  </select>
+  
+ <select id="selectListCountinfo" resultType="int" parameterType="map">
+SELECT count(1)
+from PBCRS_REPORT_BATCH b inner join PBCRS_REPORT_BATCH_info binfo on  b.id = binfo.id where binfo.id = #{id}
+</select>
+   
+   
+   <select id="selectListPageinfo" resultType="map" parameterType="map"> 
+    select * from (
+	    SELECT A.*, ROWNUM RN  from ( 
+select binfo.sgmtseqno, binfo.datadate dataDate,b.reporttype reportType,binfo.fieldname fieldName,binfo.fieldvalue fieldValue
+from PBCRS_REPORT_BATCH b inner join PBCRS_REPORT_BATCH_info binfo on 
+ b.id = binfo.id
+where binfo.id = #{id}
+) A
+	  	WHERE ROWNUM &lt;=${endindex}
+	  	
+	  	
+  	) where RN &gt;${startindex}
+  </select>
+  
+    <select id="checkFileNameDel" parameterType="map" resultType="int">
+     select count(1) from PBCRS_REPORT_BATCHdel
+     where FILENAME = #{fileName}
+  </select>
+  
+  	<insert id="insertDel" parameterType="com.hkbank.pbcrs.model.PbcrsReportBatch">
+    insert into PBCRS_REPORT_BATCHdel ( OPERATEDATE,REPORTTYPE,FILENAME
+      ,REPORTID,ID)
+    values (#{operateDate,jdbcType=VARCHAR},#{reportType,jdbcType=VARCHAR},#{fileName,jdbcType=VARCHAR}
+    ,#{reportId,jdbcType=VARCHAR},#{id,jdbcType=VARCHAR}
+      )
+  </insert>
+  
+  <select id="selectListCountDel" resultType="int" parameterType="map">
+SELECT count(1) from PBCRS_REPORT_BATCHdel
+ where 1=1 
+<include refid="sql_selectCont"></include>
+</select>
+   
+   
+   <select id="selectListPageDel" resultType="map" parameterType="map"> 
+    select * from (
+	    SELECT A.*, ROWNUM RN  from ( 
+	    select  ID, OPERATEDATE operateDate,REPORTTYPE reportType,FILENAME fileName,
+	    REPORTID reportId
+	    from  PBCRS_REPORT_BATCHdel
+        where 1 =1 <include refid="sql_selectCont"></include>
+        order by operateDate desc,rownum
+) A
+	  	WHERE ROWNUM &lt;=${endindex}
+	  	
+	  	
+  	) where RN &gt;${startindex}
+  </select>
+  
+   <select id="selectListCountinfoDel" resultType="int" parameterType="map">
+SELECT count(1)
+from PBCRS_REPORT_BATCHdel b inner join PBCRS_REPORT_BATCHdel_info binfo on  b.id = binfo.id where binfo.id = #{id}
+</select>
+   
+   
+   <select id="selectListPageinfoDel" resultType="map" parameterType="map"> 
+    select * from (
+	    SELECT A.*, ROWNUM RN  from ( 
+select binfo.sgmtseqno, b.reporttype reportType
+from PBCRS_REPORT_BATCHdel b inner join PBCRS_REPORT_BATCHdel_info binfo on 
+ b.id = binfo.id
+where binfo.id = #{id}
+) A
+	  	WHERE ROWNUM &lt;=${endindex}
+	  	
+	
+  	) where RN &gt;${startindex}
+  </select>
+  
+  <select id="listBatchDel" resultMap="BaseResultMapDel" parameterType="map"> 
+   select binfo.SGMTSEQNO sgmtSeqNo ,b.REPORTTYPE reportType,b.OPERATEDATE operateDate,
+	    b.REPORTID reportId from PBCRS_REPORT_BATCHDel_INFO binfo inner join PBCRS_REPORT_BATCHDel b on b.id=binfo.id   where binfo.id = #{id} 
+  </select>
+</mapper> 

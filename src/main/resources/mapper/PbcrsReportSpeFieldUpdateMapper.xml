@@ -1,0 +1,105 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.hkbank.pbcrs.mapper.PbcrsReportSpeFieldUpdateMapper">
+
+
+  
+  <sql id="sql_selectCont">
+  	 <if test="report_type !=null and report_type !=''">
+    	and m.report_type like  '%'||#{report_type}||'%'
+    </if>
+    <if test="sgmt_name !=null and sgmt_name !=''">
+    	and m.sgmt_name like '%'||#{sgmt_name}||'%'
+    </if>
+     <if test="comments !=null and comments !=''">
+    	and m1.comments  like '%'||#{comments}||'%'
+    </if>
+    <if test="spe_cloumn !=null and spe_cloumn !=''">
+    	and s.spe_cloumn  like '%'||#{spe_cloumn}||'%'
+    </if>
+  </sql>
+  
+  <select id="selectAllbyContCount" resultType="int" parameterType="map">
+   
+ 	select count(1)
+ 			from Pbcrs_Report_Spedeal s
+       		left join PBCRS_REPORT_SPEFIELD_MAPPING m
+       		on s.SPE_TABLE_NAME = upper(m.table_name) and s.TERM_NAME = m.FIELD_NAME
+       		left join PBCRS_REPORT_SPEFIELD_MAPPING m1
+       		on s.SPE_TABLE_NAME = upper(m1.table_name) and s.SPE_CLOUMN_NAME = m1.FIELD_NAME
+		   	where 1=1 
+			  	<include refid="sql_selectCont"></include>
+	<include refid="sql_selectCont"></include>
+  </select>
+  
+  
+  <select id="selectAllbyContPage" resultType="map" parameterType="map">
+  
+    select * from (
+	    SELECT A.*, ROWNUM RN  from (
+			      
+ 			select s.SPE_TABLE_NAME,<!--  修改表名 -->
+ 			m.REPORT_TYPE, <!-- 所属报文类型 -->
+ 			m.SGMT_NAME, <!-- 所属段 -->
+ 			s.SPE_CLOUMN_NAME,<!-- 更改字段 -->
+ 			m1.COMMENTS UPDCOMMENTS,<!-- 更改字段中文含义 -->
+ 			s.SPE_CLOUMN, <!-- 更改以后的值 -->
+ 			s.TERM_NAME, <!-- 条件字段 -->
+ 			m.COMMENTS CONCOMMENTS, <!-- 条件字段中文含义 -->
+ 			s.TERM <!-- 条件字段的值 -->
+       		from Pbcrs_Report_Spedeal s
+       		left join PBCRS_REPORT_SPEFIELD_MAPPING m
+       		on s.SPE_TABLE_NAME = upper(m.table_name) and s.TERM_NAME = m.FIELD_NAME
+       		left join PBCRS_REPORT_SPEFIELD_MAPPING m1
+       		on s.SPE_TABLE_NAME = upper(m1.table_name) and s.SPE_CLOUMN_NAME = m1.FIELD_NAME
+		   	where 1=1 
+			  	<include refid="sql_selectCont"></include>
+		  	) A
+	  	WHERE ROWNUM &lt;=${endindex}
+  	) where RN &gt;${startindex}
+    
+  </select>
+  
+  <sql id="sql_selectField">
+  	 <if test="fieldName !=null and fieldName !=''">
+    	and COMMENTS like '%'||#{fieldName}||'%'
+    </if>
+  </sql>
+  <select id="selectFieldInfoCount" resultType="int" parameterType="map">
+   
+ 	select count(1) from  PBCRS_REPORT_SPEFIELD_MAPPING m
+    where 1 = 1 
+	<include refid="sql_selectField"></include>
+  </select>
+  
+  
+  <select id="selectFieldInfoPage" resultType="map" parameterType="map">
+  
+    select * from (
+	    SELECT A.*, ROWNUM RN  from (
+			      	select * from  PBCRS_REPORT_SPEFIELD_MAPPING m
+ 			 where 1 = 1 
+			  	<include refid="sql_selectField"></include>
+		  	) A
+	  	WHERE ROWNUM &lt;=${endindex}
+  	) where RN &gt;${startindex}
+    
+  </select>
+  
+   <select id="getConditionCombox" resultType="map" parameterType="map">
+       select COMMENTS text,FIELD_NAME id from PBCRS_REPORT_SPEFIELD_MAPPING
+       where table_name  = #{tableName}
+  </select>
+  
+  <insert id="insertSpedeal"  parameterType="map">
+      insert into Pbcrs_Report_Spedeal(SPE_TABLE_NAME,TERM_NAME,TERM,SPE_CLOUMN_NAME,SPE_CLOUMN)
+      values(upper(#{tableName}),#{conditionName},#{conditionValue},#{updField},#{updFieldValue})
+  </insert>
+   
+   <delete id = "deleteSpedeal" parameterType = "map">
+       delete Pbcrs_Report_Spedeal where  SPE_TABLE_NAME = #{SPE_TABLE_NAME} 
+       and TERM_NAME = #{TERM_NAME} and TERM = #{TERM}  and SPE_CLOUMN_NAME = #{SPE_CLOUMN_NAME} and SPE_CLOUMN = #{SPE_CLOUMN}
+   </delete>
+   
+  
+</mapper>
